@@ -12,6 +12,11 @@ class ModuleConfig(models.Model):
     risk_thresholds = models.JSONField(
         help_text='JSON: {"levels": [{"label": "Low Risk", "min": 0, "max": 1, "color": "#059669"}, ...]}'
     )
+    infection_risk_thresholds = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text='JSON: {"benchmark": 1e-4, "levels": [...]}'
+    )
     calculation_config = models.JSONField(
         default=dict,
         help_text='Module-specific calculation parameters (formula, PNEC source table, etc.)'
