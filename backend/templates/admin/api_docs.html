@@ -1,0 +1,220 @@
+{% extends "admin/base_site.html" %}
+{% block title %}API Documentation | RADAR Admin{% endblock %}
+
+{% block content %}
+<style>
+  .api-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .api-header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+  }
+  .api-meta {
+    font-size: 13px;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 6px 14px;
+    border-radius: 20px;
+  }
+  .base-url-bar {
+    background: #1e293b;
+    color: #94a3b8;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-family: monospace;
+    font-size: 13px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .base-url-bar span.label {
+    color: #64748b;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .base-url-bar span.url {
+    color: #7dd3fc;
+    font-weight: 600;
+  }
+  .auth-badge {
+    background: #fef9c3;
+    color: #854d0e;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid #fde68a;
+    margin-left: auto;
+  }
+  .module-section {
+    margin-bottom: 32px;
+  }
+  .module-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 6px 12px;
+    border-radius: 6px;
+    display: inline-block;
+    margin-bottom: 12px;
+    color: white;
+  }
+  .endpoint-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .endpoint-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .endpoint-header:hover {
+    background: #f8fafc;
+  }
+  .method-badge {
+    font-size: 11px;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 5px;
+    min-width: 52px;
+    text-align: center;
+    letter-spacing: 0.04em;
+  }
+  .endpoint-url {
+    font-family: monospace;
+    font-size: 14px;
+    color: #1e293b;
+    font-weight: 600;
+  }
+  .endpoint-desc {
+    font-size: 13px;
+    color: #64748b;
+    margin-left: auto;
+    max-width: 380px;
+    text-align: right;
+  }
+  .endpoint-body {
+    border-top: 1px solid #f1f5f9;
+    padding: 16px;
+    background: #fafafa;
+    display: none;
+  }
+  .endpoint-body.open {
+    display: block;
+  }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .detail-box {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .detail-box .box-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    margin-bottom: 6px;
+  }
+  .detail-box .box-value {
+    font-size: 12px;
+    color: #334155;
+    font-family: monospace;
+    line-height: 1.5;
+  }
+  .notes-box {
+    grid-column: 1 / -1;
+    background: #eff6ff;
+    border-color: #bfdbfe;
+  }
+  .notes-box .box-label { color: #3b82f6; }
+  .notes-box .box-value { font-family: inherit; color: #1e40af; }
+  .toggle-icon {
+    margin-left: auto;
+    color: #94a3b8;
+    font-size: 18px;
+    transition: transform 0.2s;
+  }
+  .endpoint-card.open .toggle-icon {
+    transform: rotate(180deg);
+  }
+</style>
+
+<div class="api-header">
+  <h1>📡 API Documentation</h1>
+  <span class="api-meta">{{ total }} endpoint{{ total|pluralize }} across {{ groups|length }} module{{ groups|length|pluralize }}</span>
+</div>
+
+<div class="base-url-bar">
+  <span class="label">Base URL</span>
+  <span class="url">{{ base_url }}</span>
+  <span style="margin-left:16px;color:#475569;font-size:12px;">All requests require: <code style="color:#fca5a5">Authorization: Token &lt;token&gt;</code></span>
+</div>
+
+{% for group in groups %}
+<div class="module-section">
+  <div class="module-title" style="background:{{ group.color }}">{{ group.module }}</div>
+
+  {% for ep in group.endpoints %}
+  <div class="endpoint-card" id="card-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">
+    <div class="endpoint-header" onclick="toggleCard('card-{{ forloop.parentloop.counter }}-{{ forloop.counter }}')">
+      <span class="method-badge"
+            style="background:{{ ep.method_color.bg }};color:{{ ep.method_color.text }}">
+        {{ ep.method }}
+      </span>
+      <span class="endpoint-url">{{ ep.url }}</span>
+      <span class="endpoint-desc">{{ ep.description }}</span>
+      {% if ep.auth %}<span class="auth-badge">Auth Required</span>{% endif %}
+      <span class="toggle-icon">▾</span>
+    </div>
+
+    <div class="endpoint-body" id="body-card-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">
+      <div class="detail-grid">
+        <div class="detail-box">
+          <div class="box-label">Request</div>
+          <div class="box-value">{{ ep.request }}</div>
+        </div>
+        <div class="detail-box">
+          <div class="box-label">Response</div>
+          <div class="box-value">{{ ep.response }}</div>
+        </div>
+        <div class="detail-box notes-box">
+          <div class="box-label">ℹ️ Notes</div>
+          <div class="box-value">{{ ep.notes }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endfor %}
+
+<script>
+  function toggleCard(id) {
+    const card = document.getElementById(id);
+    const body = document.getElementById('body-' + id);
+    card.classList.toggle('open');
+    body.classList.toggle('open');
+  }
+</script>
+{% endblock %}

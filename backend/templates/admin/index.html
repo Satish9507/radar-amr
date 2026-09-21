@@ -1,0 +1,14 @@
+{% extends "admin/index.html" %}
+{% block content %}
+<div style="margin-bottom:20px;padding:14px 18px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;display:flex;align-items:center;justify-content:space-between;">
+  <div>
+    <strong style="color:#1e40af;font-size:14px;">📡 API Documentation</strong>
+    <p style="color:#3b82f6;font-size:12px;margin:3px 0 0;">View all available API endpoints, request formats, and response schemas.</p>
+  </div>
+  <a href="/admin/api-docs/"
+     style="background:#1e40af;color:white;padding:8px 18px;border-radius:7px;text-decoration:none;font-size:13px;font-weight:600;">
+    View API Docs →
+  </a>
+</div>
+{{ block.super }}
+{% endblock %}

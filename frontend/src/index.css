@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  font-size: 17px;
+}
+ 
+/* ── Hide scrollbar on nav tabs while keeping scroll functionality ── */
+.scrollbar-none {
+  -ms-overflow-style: none;   /* IE / Edge */
+  scrollbar-width: none;      /* Firefox */
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;              /* Chrome / Safari */
+}
+ 
+/* ── Smooth box sizing for all elements ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
