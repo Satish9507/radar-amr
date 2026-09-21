@@ -20,10 +20,11 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
-    'apps.compounds',
+    'apps.module_compounds',
     'apps.config',
     'apps.module_rq',
     'apps.module_qmra',
+    'apps.module_camri',
 ]
 
 MIDDLEWARE = [
