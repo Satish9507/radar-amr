@@ -31,7 +31,7 @@ git commit -m "RADAR initial deployment"
 Go to **github.com → New repository** → name it `radar-amr` → create it (keep it public). Then:
 
 ```bash
-git remote add origin https://github.com/YOUR_USERNAME/radar-amr.git
+git remote add origin https://github.com/Satish9507/radar-amr.git
 git branch -M main
 git push -u origin main
 ```
@@ -76,39 +76,35 @@ python manage.py migrate && python manage.py load_compounds && python manage.py 
 |---|---|
 | `SECRET_KEY` | any 50-character random string — generate one at [djecrety.ir](https://djecrety.ir) |
 | `DEBUG` | `False` |
-| `ALLOWED_HOSTS` | `radar-backend.onrender.com` (update to your actual Render URL after first deploy) |
+| `ALLOWED_HOSTS` | `radar-backend-njsx.onrender.com,radar-amr.vercel.app` |
 | `DB_NAME` | from Neon |
 | `DB_USER` | from Neon |
 | `DB_PASSWORD` | from Neon |
 | `DB_HOST` | from Neon |
 | `DB_PORT` | `5432` |
-| `CORS_ALLOW_ALL_ORIGINS` | `True` |
+| `DB_SSLMODE` | `require` |
+| `CORS_ALLOWED_ORIGINS` | `https://radar-amr.vercel.app` |
+| `RADAR_ADMIN_USER` | `admin` |
+| `RADAR_ADMIN_PASSWORD` | any password you choose |
+| `RADAR_ADMIN_EMAIL` | your email |
 
 5. Click **Create Web Service** — the first deploy takes 3–5 minutes
-6. When status shows **Live**, copy your backend URL — it will look like `https://radar-backend.onrender.com`
+6. When status shows **Live**, your backend is live at `https://radar-backend-njsx.onrender.com`
 
 ---
 
-## Phase 4 — Generate the API Token
+## Phase 4 — Get the API Token
 
-The API requires token authentication. You create one admin user and generate a token once — this token is then baked into the frontend build and public users never see it.
+The `setup_auth` command in the start command automatically creates the admin user and token on every deploy. The token is printed to the deploy logs.
 
-1. In Render, go to your **radar-backend** service → click **Shell** (top right tab)
-2. Run these two commands:
-
-```bash
-python manage.py createsuperuser
-# Enter a username (e.g. admin), email, and password when prompted
-
-python manage.py drf_create_token admin
-# Replace "admin" with whatever username you chose above
-```
-
-3. The second command prints a token like:
+1. In Render, go to **radar-backend → Logs**
+2. Look for a line like:
    ```
-   Generated token abc123def456... for user admin
+   RADAR_API_TOKEN=abc123def456...
    ```
-4. **Copy this token** — you will need it in Phase 5
+3. **Copy that token value** — you will need it in Phase 5
+
+> The token is stable across redeploys — it is only created once. If you ever need to rotate it, delete the token row from the Neon database and redeploy.
 
 ---
 
@@ -129,23 +125,24 @@ python manage.py drf_create_token admin
 
 | Key | Value |
 |---|---|
-| `VITE_API_BASE_URL` | `https://radar-backend.onrender.com/api/v1` |
+| `VITE_API_BASE_URL` | `https://radar-backend-njsx.onrender.com/api/v1` |
 | `VITE_API_TOKEN` | the token copied from Phase 4 |
 
 5. Click **Deploy** — takes about 1 minute
-6. Vercel gives you a URL like `https://radar-amr.vercel.app` — this is your live public URL
+6. Frontend is live at `https://radar-amr.vercel.app`
 
 ---
 
 ## Phase 6 — Final Wiring
 
-Go back to **Render → radar-backend → Environment** and update `ALLOWED_HOSTS` to include the Vercel domain:
+Confirm these two env vars are set correctly in Render → radar-backend → Environment:
 
 ```
-radar-backend.onrender.com,radar-amr.vercel.app
+ALLOWED_HOSTS=radar-backend-njsx.onrender.com,radar-amr.vercel.app
+CORS_ALLOWED_ORIGINS=https://radar-amr.vercel.app
 ```
 
-Click **Save** — Render will auto-redeploy in about 1 minute.
+If you changed anything, click **Save** — Render will auto-redeploy in about 1 minute.
 
 ---
 
@@ -160,25 +157,12 @@ Open `https://radar-amr.vercel.app` and test each module:
 
 ---
 
-## Conference Day Checklist
-
-Render's free tier sleeps after 15 minutes of no traffic. The backend takes about 30 seconds to wake up on the first request.
-
-**The day before the conference:**
-- Open the live URL in your browser once to confirm everything is working
-
-**5 minutes before presenting:**
-- Open the live URL in your browser — let it load fully (this wakes the backend)
-- After that first request the tool will respond instantly for the entire session
-
----
-
 ## What You End Up With
 
 | Service | URL | Cost |
 |---|---|---|
 | Frontend | `https://radar-amr.vercel.app` | Free forever |
-| Backend | `https://radar-backend.onrender.com` | Free forever |
+| Backend | `https://radar-backend-njsx.onrender.com` | Free forever |
 | Database | Neon | Free forever (512 MB — this app uses under 5 MB) |
 
 ---
@@ -187,5 +171,6 @@ Render's free tier sleeps after 15 minutes of no traffic. The backend takes abou
 
 - The database holds only seeded reference data (compounds, pathogen profiles, module configs). No user data is ever stored. If the database is ever wiped, run the seed commands in Phase 3 again and everything is restored.
 - The API uses token authentication. The token is embedded in the frontend build at deploy time — public users interact with the tool normally and never see or handle the token directly.
-- If you need to rotate the token (e.g. if it is exposed), generate a new one via the Render shell, update `VITE_API_TOKEN` in Vercel, and redeploy the frontend.
+- If you need to rotate the token, delete the token row in Neon and redeploy the backend — a new token will be printed in the logs. Update `VITE_API_TOKEN` in Vercel and redeploy the frontend.
 - Future code changes: push to GitHub and both Render and Vercel will auto-redeploy within minutes.
+- Render's free tier sleeps after 15 minutes of no traffic. The backend takes ~30 seconds to wake on the first request. Open the live URL once before a demo to pre-warm it.
