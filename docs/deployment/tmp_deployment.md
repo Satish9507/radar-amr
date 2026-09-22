@@ -67,7 +67,7 @@ git push -u origin main
 **Start Command** — paste this exactly:
 
 ```
-python manage.py migrate && python manage.py load_compounds && python manage.py load_module_config && python manage.py load_qmra_module_config && python manage.py load_pathogen_profiles && python manage.py load_camri_module_config && python manage.py setup_auth && gunicorn core.wsgi --log-file -
+python manage.py migrate && python manage.py load_compounds && python manage.py load_pnec_values && python manage.py load_module_config && python manage.py load_qmra_module_config && python manage.py load_pathogen_profiles && python manage.py load_camri_module_config && python manage.py setup_auth && gunicorn core.wsgi --log-file -
 ```
 
 4. Scroll down to **Environment Variables** and add each of these:
