@@ -339,21 +339,22 @@ const FileZone = ({ label, file, onFile, inputId, subtext }) => {
     if (inputRef.current) inputRef.current.value = "";
   }, [onFile]);
   return (
-    <div onDragOver={e => { e.preventDefault(); setDragging(true); }}
+    <label htmlFor={inputId}
+         onDragOver={e => { e.preventDefault(); setDragging(true); }}
          onDragLeave={() => setDragging(false)}
          onDrop={handleDrop}
-         onClick={() => inputRef.current?.click()}
          style={{
            border: `2px dashed ${file ? C.primary : dragging ? C.primary : C.border}`,
            background: file ? "#EDE9FE" : dragging ? "#EDE9FE" : "#F8FAFC",
            transition: "all 0.2s",
            position: "relative",
+           display: "block",
          }}
          className="rounded-xl p-4 text-center cursor-pointer hover:border-violet-400 hover:bg-violet-50">
       <input ref={inputRef} id={inputId} type="file" accept=".xlsx,.xls" className="hidden"
              onChange={e => { if (e.target.files[0]) onFile(e.target.files[0]); }}/>
       {file && (
-        <button onClick={clearFile}
+        <button onClick={e => { e.preventDefault(); clearFile(e); }}
                 style={{ position:"absolute", top:8, right:8, background:"white",
                          border:`1px solid ${C.border}`, borderRadius:"50%",
                          width:24, height:24, display:"flex", alignItems:"center",
@@ -370,7 +371,7 @@ const FileZone = ({ label, file, onFile, inputId, subtext }) => {
       <p style={{ color: C.textMid, fontSize: 12, marginTop: 2 }}>
         {file ? `${(file.size / 1024).toFixed(1)} KB · click to change` : (subtext ?? "Drop .xlsx or .xls")}
       </p>
-    </div>
+    </label>
   );
 };
 

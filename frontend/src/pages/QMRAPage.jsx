@@ -354,17 +354,17 @@ const UploadZone = ({ onCalculate, onDownloadTemplate }) => {
   }, []);
   return (
     <div className="space-y-3">
-      <div onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+      <label htmlFor="qmra-file-input"
+           onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
            onDragLeave={() => setDragging(false)} onDrop={handleDrop}
-           onClick={() => inputRef.current?.click()}
            style={{ border: `2px dashed ${dragging ? C.primary : C.border}`,
                     background: dragging ? "#CCFBF1" : "#F8FAFC", transition: "all 0.2s",
-                    position: "relative" }}
+                    position: "relative", display: "block" }}
            className="rounded-xl p-6 md:p-10 text-center cursor-pointer hover:border-teal-400 hover:bg-teal-50">
-        <input ref={inputRef} type="file" accept=".xlsx,.xls" className="hidden"
+        <input id="qmra-file-input" ref={inputRef} type="file" accept=".xlsx,.xls" className="hidden"
                onChange={(e) => setFile(e.target.files[0])}/>
         {file && (
-          <button onClick={clearFile}
+          <button onClick={(e) => { e.preventDefault(); clearFile(e); }}
                   style={{ position:"absolute", top:8, right:8, background:"white",
                            border:`1px solid ${C.border}`, borderRadius:"50%",
                            width:24, height:24, display:"flex", alignItems:"center",
@@ -380,7 +380,7 @@ const UploadZone = ({ onCalculate, onDownloadTemplate }) => {
           {file ? `${(file.size / 1024).toFixed(1)} KB — ready to process`
                 : "Supports .xlsx or .xls · Based on the QMRA input template"}
         </p>
-      </div>
+      </label>
       <div style={{ background: "#CCFBF1", border: "1px solid #99F6E4" }}
            className="rounded-lg px-3 py-2.5 flex items-start gap-2">
         <Info size={15} color={C.primary} style={{ flexShrink: 0, marginTop: 1 }}/>
