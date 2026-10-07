@@ -86,7 +86,7 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'apps.module_rq.exceptions.custom_exception_handler',
 }
 
-if os.getenv('CORS_ALLOW_ALL_ORIGINS', 'False') == 'True':
+if DEBUG or os.getenv('CORS_ALLOW_ALL_ORIGINS', 'False') == 'True':
     CORS_ALLOW_ALL_ORIGINS = True
 else:
     CORS_ALLOWED_ORIGINS = os.getenv(
