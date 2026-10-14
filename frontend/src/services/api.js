@@ -106,6 +106,43 @@ export async function calculateCAMRI(arbFile, argFile, alpha = 0.6) {
   return json;
 }
 
+export async function fetchQMRAPathogens() {
+  const res = await fetch(`${API_BASE}/qmra/pathogens/`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to load QMRA pathogens');
+  const json = await res.json();
+  return json.pathogens ?? [];
+}
+
+export async function fetchCAMRICoefficients() {
+  const res = await fetch(`${API_BASE}/camri/coefficients/`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to load CAMRI coefficients');
+  return res.json();
+}
+
+export async function calculateRADAR(qmraFile, camriArgFile, rqFile, weights = {}) {
+  const form = new FormData();
+  if (qmraFile)     form.append('qmra_file',      qmraFile);
+  if (camriArgFile) form.append('camri_arg_file',  camriArgFile);
+  if (rqFile)       form.append('rq_file',         rqFile);
+  form.append('w_a', String(weights.w_a ?? 0.50));
+  form.append('w_b', String(weights.w_b ?? 0.30));
+  form.append('w_c', String(weights.w_c ?? 0.20));
+
+  const res = await fetch(`${API_BASE}/radar/calculate/`, {
+    method: 'POST', headers: authHeaders(), body: form,
+  });
+  const json = await res.json();
+  if (!res.ok || json.status === 'error') {
+    const err = new Error(json.message || 'RADAR calculation failed');
+    err.code = json.code; err.details = json; throw err;
+  }
+  return json;
+}
+
 export async function downloadCAMRITemplate(fileType) {
   const res = await fetch(`${API_BASE}/camri/template/${fileType}/`, {
     headers: authHeaders(),

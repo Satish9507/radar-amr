@@ -16,7 +16,8 @@ import Header        from "../components/Header";
 import NavBar        from "../components/NavBar";
 import Footer        from "../components/Footer";
 import useBreakpoint from "../hooks/useBreakpoint";
-import { calculateQMRA, getModuleConfig } from "../services/api";
+import { calculateQMRA, getModuleConfig, fetchQMRAPathogens } from "../services/api";
+import { fmtDate } from "../utils/dateUtils";
 import SensitivityHeatmap from "../components/SensitivityHeatmap";
 
 // ─── Colour palette ──────────────────────────────────────────────────────────
@@ -513,6 +514,82 @@ const Instructions = () => {
   );
 };
 
+// ─── Supported Pathogens panel ────────────────────────────────────────────────
+const MODEL_LABEL = { beta_poisson: 'Beta-Poisson', exponential: 'Exponential' };
+
+const SupportedPathogens = ({ pathogens }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ background: C.cardBg, border: `1px solid ${C.border}` }} className="rounded-xl overflow-hidden">
+      <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-3"
+              style={{ background: "none", border: "none", cursor: "pointer" }}>
+        <div className="flex items-center gap-2">
+          <Shield size={15} color={C.primary}/>
+          <span style={{ color: C.textDark, fontWeight: 600, fontSize: 16 }}>Supported Pathogens</span>
+        </div>
+        <ChevronDown size={15} color={C.textMid}
+                     style={{ transform: open ? "rotate(180deg)" : "none", transition: "0.2s" }}/>
+      </button>
+
+      {open && (
+        <div style={{ borderTop: `1px solid ${C.border}` }} className="p-4 md:p-5 space-y-4">
+          <p style={{ color: C.textMid, fontSize: 14 }}>
+            The tool currently supports the following pathogens. Enter the exact name in the <strong style={{ color: C.textDark }}>Pathogen</strong> column of your Excel file.
+          </p>
+
+          <div className="space-y-3">
+            {pathogens.map(p => (
+              <div key={p.pathogen_name}
+                   style={{ background: "#F8FAFC", border: `1px solid ${C.border}`, borderRadius: 10 }}
+                   className="p-3 md:p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                  <div>
+                    <p style={{ color: C.textDark, fontWeight: 700, fontSize: 15, fontStyle: "italic" }}>
+                      {p.pathogen_name}
+                    </p>
+                    {p.display_strain && (
+                      <p style={{ color: C.textMid, fontSize: 13, marginTop: 1 }}>{p.display_strain}</p>
+                    )}
+                  </div>
+                  <span style={{ background: C.primary + "18", color: C.primary, fontWeight: 600,
+                                 fontSize: 12, padding: "2px 9px", borderRadius: 20, whiteSpace: "nowrap" }}>
+                    {MODEL_LABEL[p.model_type] ?? p.model_type}
+                  </span>
+                </div>
+
+                {p.endpoints?.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {p.endpoints.map(ep => (
+                      <span key={ep}
+                            style={{ background: C.primary + "18", color: C.primary, fontSize: 12,
+                                     padding: "1px 8px", borderRadius: 20, fontWeight: 500 }}>
+                        {ep}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <p style={{ color: C.textLight, fontSize: 12 }}>
+                  Source: {p.param_source}
+                  {p.param_source_amr && ` · AMR DALY: ${p.param_source_amr}`}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 8 }}
+               className="px-3 py-2.5 flex items-start gap-2">
+            <AlertTriangle size={14} color={C.yellow} style={{ flexShrink: 0, marginTop: 1 }}/>
+            <p style={{ color: "#92400E", fontSize: 14 }}>
+              Pathogen names are case-sensitive. Use the exact spelling above. Unrecognised pathogens will be skipped during calculation.
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ─── Empty State ──────────────────────────────────────────────────────────────
 const EmptyState = ({ icon: Icon, title, sub }) => (
   <div className="flex flex-col items-center justify-center py-14 gap-3">
@@ -691,6 +768,7 @@ export default function QMRAPage() {
   const { isMobile }  = useBreakpoint();
   const [thresholds,          setThresholds]          = useState(DEFAULT_THRESHOLDS);
   const [infectionThresholds, setInfectionThresholds] = useState(DEFAULT_INFECTION_THRESHOLDS);
+  const [pathogens,           setPathogens]           = useState([]);
   const [results,             setResults]             = useState(null);
 
   useEffect(() => {
@@ -701,6 +779,9 @@ export default function QMRAPage() {
         const infLevels = cfg.infection_risk_thresholds?.levels;
         if (Array.isArray(infLevels) && infLevels.length > 0) setInfectionThresholds(infLevels);
       })
+      .catch(() => {});
+    fetchQMRAPathogens()
+      .then(data => setPathogens(data))
       .catch(() => {});
   }, []);
   const [apiErrors,   setApiErrors]   = useState([]);
@@ -852,6 +933,7 @@ export default function QMRAPage() {
         {!results && (
           <div className="space-y-4">
             <Instructions/>
+            <SupportedPathogens pathogens={pathogens}/>
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] gap-4 md:gap-6">
 
               {/* Left: Models + DALY Thresholds */}
@@ -1103,10 +1185,8 @@ export default function QMRAPage() {
                                   { label: "P(annual)",            sortKey: "p_annual"    },
                                   { label: "Infection Risk",       sortKey: "p_annual",    minWidth: 120 },
                                   { label: "DALYs/yr",             sortKey: "daly"        },
-                                  { label: "DALY Risk",            sortKey: "daly"        },
                                   ...(displayResults.some(r => r.d_daly != null) ? [
                                     { label: "dDALY",              sortKey: "d_daly"      },
-                                    { label: "DALY Risk (ARB)",    sortKey: null          },
                                   ] : []),
                                 ].map(col => (
                                   <th key={col.label}
@@ -1134,7 +1214,7 @@ export default function QMRAPage() {
                                   <tr key={r.id} style={{ borderTop: `1px solid ${C.border}` }} className="hover:bg-slate-50">
                                     <td className="px-2 md:px-3 py-2" style={{ color: C.textLight }}>{rowNum}</td>
                                     <td className="px-2 md:px-3 py-2 font-medium" style={{ color: C.textDark }}>{r.site}</td>
-                                    <td className="px-2 md:px-3 py-2" style={{ color: C.textMid }}>{r.date}</td>
+                                    <td className="px-2 md:px-3 py-2" style={{ color: C.textMid }}>{fmtDate(r.date)}</td>
                                     <td className="px-2 md:px-3 py-2"><PathogenBadge value={r.pathogen}/></td>
                                     <td className="px-2 md:px-3 py-2" style={{ color: C.textMid, fontSize: 13 }}>{r.endpoint}</td>
                                     <td className="px-2 md:px-3 py-2" style={{ color: C.textMid, fontSize: 13 }}>{r.sample_type}</td>
@@ -1147,22 +1227,16 @@ export default function QMRAPage() {
                                     <td className="px-2 md:px-3 py-2 font-bold" style={{ color: riskFromPInfection(r.p_annual, infectionThresholds).color }}>{fmtSciJsx(r.p_annual)}</td>
                                     <td className="px-2 md:px-3 py-2">{(() => { const ir = riskFromPInfection(r.p_annual, infectionThresholds); return <span style={{ background: ir.bg, color: ir.color, border: `1px solid ${ir.color}33` }} className="text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">{ir.label}</span>; })()}</td>
                                     <td className="px-2 md:px-3 py-2 font-bold" style={{ color: risk.color }}>{fmtSciJsx(r.daly_baseline ?? r.daly)}</td>
-                                    <td className="px-2 md:px-3 py-2"><RiskBadge daly={r.daly} thresholds={thresholds}/></td>
                                     {displayResults.some(d => d.d_daly != null) && (
-                                      <>
-                                        <td className="px-2 md:px-3 py-2 font-bold" style={{ color: r.d_daly > 0 ? "#D97706" : C.textMid, fontSize: 13 }}>
-                                          {r.d_daly != null ? fmtSciJsx(r.d_daly) : "—"}
-                                        </td>
-                                        <td className="px-2 md:px-3 py-2">
-                                          {r.risk_label_arb ? <RiskBadge daly={r.daly_arb ?? 0} thresholds={thresholds}/> : <span style={{ color: C.textLight, fontSize: 13 }}>—</span>}
-                                        </td>
-                                      </>
+                                      <td className="px-2 md:px-3 py-2 font-bold" style={{ color: r.d_daly > 0 ? "#D97706" : C.textMid, fontSize: 13 }}>
+                                        {r.d_daly != null ? fmtSciJsx(r.d_daly) : "—"}
+                                      </td>
                                     )}
                                   </tr>
                                 );
                               })}
                               {displayResults.length === 0 && (
-                                <tr><td colSpan={displayResults.some(r => r.d_daly != null) ? 19 : 17} className="text-center py-10"
+                                <tr><td colSpan={displayResults.some(r => r.d_daly != null) ? 17 : 16} className="text-center py-10"
                                         style={{ color: C.textLight, fontSize: 15 }}>No rows match the current filters.</td></tr>
                               )}
                             </tbody>

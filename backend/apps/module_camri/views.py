@@ -9,7 +9,7 @@ from rest_framework import status
 from django.http import HttpResponse
 
 from .calculator import parse_camri_excel, validate_sites, run_camri
-from .coefficients import ARB_COEFFICIENTS, ARG_COEFFICIENTS
+from .coefficients import get_coefficients_from_db
 from apps.config.models import ModuleConfig
 
 _ACCEPTED = ('.xlsx', '.xls')
@@ -200,6 +200,25 @@ class CAMRICalculateView(APIView):
         })
 
 
+# ── Coefficients ───────────────────────────────────────────────────────────────
+
+class CAMRICoefficientsView(APIView):
+    def get(self, request):
+        from .models import CAMRICoefficient
+        qs = list(CAMRICoefficient.objects.all())
+        arb = [
+            {'column': c.column_name, 'label': c.label, 'coefficient': c.coefficient,
+             'priority_rank': c.priority_rank, 'source_reference': c.source_reference}
+            for c in qs if c.type == 'arb'
+        ]
+        arg = [
+            {'column': c.column_name, 'label': c.label, 'coefficient': c.coefficient,
+             'priority_rank': c.priority_rank, 'source_reference': c.source_reference}
+            for c in qs if c.type == 'arg'
+        ]
+        return Response({'arb': arb, 'arg': arg})
+
+
 # ── Excel templates ────────────────────────────────────────────────────────────
 
 _HEADER_FILL   = PatternFill('solid', fgColor='7C3AED')
@@ -251,8 +270,9 @@ def _build_template(data_cols: list, unit_label: str, example_rows: list) -> byt
 
 class CAMRITemplateView(APIView):
     def get(self, request, file_type):
+        arb_coeffs, arg_coeffs, _, _ = get_coefficients_from_db()
         if file_type == 'arb':
-            data_cols   = list(ARB_COEFFICIENTS.keys())
+            data_cols   = list(arb_coeffs.keys())
             unit_label  = 'CFU/mL'
             filename    = 'camri_arb_template.xlsx'
             example_rows = [
@@ -270,7 +290,7 @@ class CAMRITemplateView(APIView):
                  'Kleb_MEM': 0.0, 'Ent_VAN': 0.0, 'Ec_MEM': 0.0},
             ]
         elif file_type == 'arg':
-            data_cols   = list(ARG_COEFFICIENTS.keys())
+            data_cols   = list(arg_coeffs.keys())
             unit_label  = 'copies/mL'
             filename    = 'camri_arg_template.xlsx'
             example_rows = [

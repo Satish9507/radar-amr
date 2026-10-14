@@ -223,6 +223,25 @@ function HowToRead({ darkMode }) {
           </div>
         </div>
 
+        {/* Abbreviations */}
+        <div style={{ background: secBg, border: `1px solid ${bdr}`, borderRadius: 6, padding: '10px 14px', flex: '1 1 220px', minWidth: 220 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: mid, marginBottom: 8 }}>Abbreviations</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            {[
+              ['ESBL', 'Extended-Spectrum β-Lactamase'],
+              ['ETEC', 'Enterotoxigenic E. coli'],
+              ['UPEC', 'Uropathogenic E. coli'],
+              ['DALY', 'Disability-Adjusted Life Year'],
+              ['MC',   'Monte Carlo'],
+            ].map(([abbr, def]) => (
+              <div key={abbr} style={{ display: 'flex', gap: 6, fontSize: 13 }}>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: '#1B7FA3', minWidth: 40, flexShrink: 0 }}>{abbr}</span>
+                <span style={{ color: txt }}>{def}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
       </div>
     </div>
   );

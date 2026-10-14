@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'apps.module_rq',
     'apps.module_qmra',
     'apps.module_camri',
+    'apps.module_radar',
 ]
 
 MIDDLEWARE = [

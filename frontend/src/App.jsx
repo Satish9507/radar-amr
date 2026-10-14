@@ -3,6 +3,7 @@ import LandingPage from "./pages/LandingPage";
 import RQPage      from "./pages/RQPage";
 import QMRAPage    from "./pages/QMRAPage";
 import CAMRIPage   from "./pages/CAMRIPage";
+import RADARPage   from "./pages/RADARPage";
 import ComingSoon  from "./pages/ComingSoon";
 
 // ─── Route map ────────────────────────────────────────────────────────────────
@@ -23,6 +24,7 @@ export default function App() {
       {/* Coming soon tools */}
       <Route path="/qmra"  element={<QMRAPage />} />
       <Route path="/camri" element={<CAMRIPage />} />
+      <Route path="/radar" element={<RADARPage />} />
       <Route path="/daly"  element={<ComingSoon tool="QMRA-DALY" desc="Quantitative Microbial Risk Assessment using Disability-Adjusted Life Years" />} />
 
       {/* Catch-all → redirect home */}

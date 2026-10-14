@@ -5,6 +5,7 @@ from datetime import date as date_type
 from .coefficients import (
     ARB_COEFFICIENTS, ARG_COEFFICIENTS,
     ARB_LABELS, ARG_LABELS, FIXED_META_COLS,
+    get_coefficients_from_db,
 )
 
 
@@ -32,7 +33,7 @@ def _to_str(val):
 
 # ── Excel parser ───────────────────────────────────────────────────────────────
 
-def parse_camri_excel(file, file_type: str) -> tuple:
+def parse_camri_excel(file, file_type: str, arb_coefficients=None, arg_coefficients=None) -> tuple:
     """
     Parse an ARB or ARG Excel file using the standard CAMRI template format.
 
@@ -44,7 +45,9 @@ def parse_camri_excel(file, file_type: str) -> tuple:
     file_type: 'arb' | 'arg'
     Returns: (records, matched_cols, unmatched_cols, warnings)
     """
-    coeff_map = ARB_COEFFICIENTS if file_type == 'arb' else ARG_COEFFICIENTS
+    if arb_coefficients is None or arg_coefficients is None:
+        arb_coefficients, arg_coefficients, _, _ = get_coefficients_from_db()
+    coeff_map = arb_coefficients if file_type == 'arb' else arg_coefficients
 
     wb = openpyxl.load_workbook(file, data_only=True)
     ws = wb.active
@@ -145,29 +148,29 @@ def get_risk_label(score: float, thresholds=None) -> str:
 
 # ── ARB-only pipeline (steps 1–5) ─────────────────────────────────────────────
 
-def _run_arb_track(records: list) -> tuple:
+def _run_arb_track(records: list, arb_coefficients: dict) -> tuple:
     """Return (NS_arb, S_arb_matrix, arb_keys) for the given records."""
-    arb_keys = list(ARB_COEFFICIENTS.keys())
+    arb_keys = list(arb_coefficients.keys())
     C_arb = np.array(
         [[r['data'].get(k, 0.0) for k in arb_keys] for r in records],
         dtype=float,
     )
     N_arb = np.apply_along_axis(_minmax, 0, C_arb)
-    w_arb = np.array([ARB_COEFFICIENTS[k] for k in arb_keys], dtype=float)
+    w_arb = np.array([arb_coefficients[k] for k in arb_keys], dtype=float)
     S_arb_matrix = N_arb * w_arb
     NS_arb = _minmax(S_arb_matrix.sum(axis=1))
     return NS_arb, S_arb_matrix, arb_keys
 
 
-def _run_arg_track(records: list) -> tuple:
+def _run_arg_track(records: list, arg_coefficients: dict) -> tuple:
     """Return (NS_arg, S_arg_matrix, arg_keys) for the given records."""
-    arg_keys = list(ARG_COEFFICIENTS.keys())
+    arg_keys = list(arg_coefficients.keys())
     C_arg = np.array(
         [[r['data'].get(k, 0.0) for k in arg_keys] for r in records],
         dtype=float,
     )
     N_arg = np.apply_along_axis(_minmax, 0, C_arg)
-    w_arg = np.array([ARG_COEFFICIENTS[k] for k in arg_keys], dtype=float)
+    w_arg = np.array([arg_coefficients[k] for k in arg_keys], dtype=float)
     S_arg_matrix = N_arg * w_arg
     NS_arg = _minmax(S_arg_matrix.sum(axis=1))
     return NS_arg, S_arg_matrix, arg_keys
@@ -191,6 +194,8 @@ def run_camri(
     """
     alpha = max(0.5, min(1.0, float(alpha)))
 
+    arb_coeffs, arg_coeffs, arb_lbl, arg_lbl = get_coefficients_from_db()
+
     has_arb = bool(arb_records)
     has_arg = bool(arg_records)
 
@@ -199,7 +204,7 @@ def run_camri(
 
     # ── ARB-only ──────────────────────────────────────────────────────
     if has_arb and not has_arg:
-        NS_arb, S_arb_matrix, arb_keys = _run_arb_track(arb_records)
+        NS_arb, S_arb_matrix, arb_keys = _run_arb_track(arb_records, arb_coeffs)
         results = []
         for i, rec in enumerate(arb_records):
             score = float(NS_arb[i])
@@ -220,8 +225,8 @@ def run_camri(
             'sample_ids':    [r['sample_id'] for r in arb_records],
             'arb_keys':      arb_keys,
             'arg_keys':      [],
-            'arb_labels':    ARB_LABELS,
-            'arg_labels':    ARG_LABELS,
+            'arb_labels':    arb_lbl,
+            'arg_labels':    arg_lbl,
             'results':       results,
             'arb_matrix':    S_arb_matrix.tolist(),
             'arg_matrix':    [],
@@ -232,7 +237,7 @@ def run_camri(
 
     # ── ARG-only ──────────────────────────────────────────────────────
     if has_arg and not has_arb:
-        NS_arg, S_arg_matrix, arg_keys = _run_arg_track(arg_records)
+        NS_arg, S_arg_matrix, arg_keys = _run_arg_track(arg_records, arg_coeffs)
         results = []
         for i, rec in enumerate(arg_records):
             score = float(NS_arg[i])
@@ -253,8 +258,8 @@ def run_camri(
             'sample_ids':    [r['sample_id'] for r in arg_records],
             'arb_keys':      [],
             'arg_keys':      arg_keys,
-            'arb_labels':    ARB_LABELS,
-            'arg_labels':    ARG_LABELS,
+            'arb_labels':    arb_lbl,
+            'arg_labels':    arg_lbl,
             'results':       results,
             'arb_matrix':    [],
             'arg_matrix':    S_arg_matrix.tolist(),
@@ -274,8 +279,8 @@ def run_camri(
     matched_arb = [arb_by_id[sid] for sid in matched_ids]
     matched_arg = [arg_by_id[sid] for sid in matched_ids]
 
-    NS_arb, S_arb_matrix, arb_keys = _run_arb_track(matched_arb)
-    NS_arg, S_arg_matrix, arg_keys = _run_arg_track(matched_arg)
+    NS_arb, S_arb_matrix, arb_keys = _run_arb_track(matched_arb, arb_coeffs)
+    NS_arg, S_arg_matrix, arg_keys = _run_arg_track(matched_arg, arg_coeffs)
 
     NS_amr = alpha * NS_arb + (1.0 - alpha) * NS_arg
 
@@ -306,8 +311,8 @@ def run_camri(
         'sample_ids':    matched_ids,
         'arb_keys':      arb_keys,
         'arg_keys':      arg_keys,
-        'arb_labels':    ARB_LABELS,
-        'arg_labels':    ARG_LABELS,
+        'arb_labels':    arb_lbl,
+        'arg_labels':    arg_lbl,
         'results':       results,
         'arb_matrix':    S_arb_matrix.tolist(),
         'arg_matrix':    S_arg_matrix.tolist(),

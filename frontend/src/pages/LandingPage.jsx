@@ -4,7 +4,7 @@ import Footer from "../components/Footer";
 import {
   Shield, Beaker, Activity, Cpu, ArrowRight, Upload,
   Download, CheckCircle, FlaskConical, Globe,
-  ChevronDown, Microscope, AlertTriangle,
+  ChevronDown, Microscope, AlertTriangle, Target,
 } from "lucide-react";
 import useBreakpoint from "../hooks/useBreakpoint";
 
@@ -79,6 +79,7 @@ const MODULE_ACCENT = {
   rq:    { main:"#1E40AF", light:"#DBEAFE", pill:"#EFF6FF", pillBorder:"#BFDBFE" },
   qmra:  { main:"#0D9488", light:"#CCFBF1", pill:"#F0FDFA", pillBorder:"#99F6E4" },
   camri: { main:"#7C3AED", light:"#EDE9FE", pill:"#F5F3FF", pillBorder:"#DDD6FE" },
+  radar: { main:"#0891B2", light:"#E0F2FE", pill:"#F0F9FF", pillBorder:"#BAE6FD" },
 };
 const DEFAULT_ACCENT = { main:"#94A3B8", light:"#F8FAFC", pill:"#F8FAFC", pillBorder:"#E2E8F0" };
 
@@ -172,6 +173,10 @@ export default function LandingPage() {
       accent: MODULE_ACCENT.camri,
       desc:"Combined AMR Relative Index using a 6-step pipeline that combines antibiotic-resistant bacteria and resistance genes into a single normalised burden score.",
       tags:["ARB / ARG","Burden Index","Relative Risk"] },
+    { icon:Target,   title:"RADAR Score",         active:true,  route:"/radar",
+      accent: MODULE_ACCENT.radar,
+      desc:"Multi-criteria composite risk score that integrates QMRA, CAMRI, and RQ outputs into a single normalised 0–1 index per sample, with adjustable weights.",
+      tags:["Composite Score","Multi-Criteria","Weight Adjustable","Risk Tiers"] },
   ];
 
   return (
@@ -245,7 +250,7 @@ export default function LandingPage() {
                         lineHeight:1.7, marginBottom:24,
                         maxWidth: isDesktop ? 480 : "100%" }}>
               A free, browser-based AMR risk assessment platform for environmental scientists.
-              Upload sample data, run validated calculations across three specialist modules, and export professional reports.
+              Upload sample data, run validated calculations across four specialist modules, and export professional reports.
             </p>
 
             <div style={{ display:"flex", gap:12, flexWrap:"wrap",
@@ -303,7 +308,7 @@ export default function LandingPage() {
                       gap: isMobile ? 10 : 24, flexWrap:"wrap",
                       position:"relative", zIndex:10 }}>
           {[
-            { value:"3",     label:"Risk Modules",             color:"#60A5FA", delay:200  },
+            { value:"4",     label:"Risk Modules",             color:"#60A5FA", delay:200  },
             { value:"WHO",   label:"Aligned Benchmarks",       color:"#34D399", delay:350  },
             { value:"0",     label:"Data Leaves Your Browser", color:"#FBBF24", delay:500  },
             { value:"Peer",  label:"Reviewed Methods",         color:"#F472B6", delay:650  },
@@ -321,15 +326,15 @@ export default function LandingPage() {
             <span style={{ color:"#1E40AF", fontSize:14, fontWeight:600 }}>Assessment Tools</span>
           </div>
           <h2 style={{ color:"#0F172A", fontSize: isMobile?24:30, fontWeight:800, marginBottom:10 }}>
-            Three Specialised Risk Tools
+            Four Specialised Risk Tools
           </h2>
-          <p style={{ color:"#64748B", fontSize:16, maxWidth:520, margin:"0 auto" }}>
-            Each tool targets a specific risk assessment methodology. RQ, QMRA, and CAMRI are all live and free.
+          <p style={{ color:"#64748B", fontSize:16, maxWidth:600, margin:"0 auto" }}>
+            Each tool targets a specific risk assessment methodology. RQ, QMRA, CAMRI, and RADAR Score are all live and free.
           </p>
         </div>
 
-        {/* Tools grid: 1 col mobile → 2 col tablet → 3 col desktop */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        {/* Tools grid: 1 col mobile → 2 col tablet → 4 col desktop */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           {tools.map(tool => (
             <ToolCard key={tool.title} {...tool} onClick={() => navigate(tool.route)} />
           ))}
@@ -377,8 +382,8 @@ export default function LandingPage() {
           Ready to assess your environmental risk data?
         </h2>
         <p style={{ color:"rgba(255,255,255,0.7)", fontSize:16, marginBottom:24,
-                    maxWidth:560, margin:"0 auto 24px" }}>
-          Three tools live and free. RQ for chemical risk, QMRA for microbial risk, and CAMRI for combined AMR burden. No account needed.
+                    maxWidth:640, margin:"0 auto 24px" }}>
+          Four tools live and free. RQ for chemical risk, QMRA for microbial risk, CAMRI for combined AMR burden, and RADAR Score for multi-criteria composite integration. No account needed.
         </p>
         <div style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
           <button onClick={onGetStarted}
@@ -404,6 +409,14 @@ export default function LandingPage() {
                            fontSize: isMobile ? 14 : 15, fontWeight:700, cursor:"pointer",
                            display:"inline-flex", alignItems:"center", gap:8 }}>
             Launch CAMRI <ArrowRight size={16} />
+          </button>
+          <button onClick={() => navigate("/radar")}
+                  style={{ background:"rgba(8,145,178,0.35)", color:"white",
+                           border:"1px solid rgba(186,230,253,0.5)", borderRadius:12,
+                           padding: isMobile ? "12px 20px" : "14px 28px",
+                           fontSize: isMobile ? 14 : 15, fontWeight:700, cursor:"pointer",
+                           display:"inline-flex", alignItems:"center", gap:8 }}>
+            Launch RADAR <ArrowRight size={16} />
           </button>
         </div>
       </section>

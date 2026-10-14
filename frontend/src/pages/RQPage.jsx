@@ -152,8 +152,8 @@ function downloadCSV(data, thresholds) {
   const rows = data.map((r,i) => [
     i+1, r.sample_id ?? '', r.site, r.compound_class ?? '', r.compound_name, r.compound_code,
     r.mec, r.mec_unit, r.pnec_eco ?? '', r.pnec_amr ?? '',
-    r.rq_eco != null ? r.rq_eco.toFixed(4) : '',
-    r.rq_amr != null ? r.rq_amr.toFixed(4) : '',
+    r.rq_eco != null ? r.rq_eco.toFixed(3) : '',
+    r.rq_amr != null ? r.rq_amr.toFixed(3) : '',
     r.rq_eco != null ? riskLevel(r.rq_eco, thresholds).label : 'No PNEC',
     r.rq_amr != null ? riskLevel(r.rq_amr, thresholds).label : 'No PNEC',
   ]);
@@ -169,8 +169,8 @@ function downloadXLSX(data, thresholds) {
     ...data.map((r,i)=>[
       i+1, r.sample_id ?? '', r.site, r.compound_class ?? '', r.compound_name, r.compound_code,
       r.mec, r.mec_unit, r.pnec_eco ?? '', r.pnec_amr ?? '',
-      r.rq_eco != null ? r.rq_eco.toFixed(4) : '',
-      r.rq_amr != null ? r.rq_amr.toFixed(4) : '',
+      r.rq_eco != null ? r.rq_eco.toFixed(3) : '',
+      r.rq_amr != null ? r.rq_amr.toFixed(3) : '',
       r.rq_eco != null ? riskLevel(r.rq_eco, thresholds).label : 'No PNEC',
       r.rq_amr != null ? riskLevel(r.rq_amr, thresholds).label : 'No PNEC',
     ])
@@ -189,8 +189,8 @@ function downloadXLSX(data, thresholds) {
       const maxAmr=amrVals.length?Math.max(...amrVals):null;
       const maxVal=Math.max(maxEco??0,maxAmr??0);
       return[site,rows.length,
-        maxEco!=null?maxEco.toFixed(4):'',
-        maxAmr!=null?maxAmr.toFixed(4):'',
+        maxEco!=null?maxEco.toFixed(3):'',
+        maxAmr!=null?maxAmr.toFixed(3):'',
         riskLevel(maxVal, thresholds).label];
     })
   ]);
@@ -355,8 +355,8 @@ const SummaryCards = ({ data }) => {
   const cards = [
     { label:"Samples Analysed",   value:data.length,       icon:FileSpreadsheet, color:C.primary },
     { label:"Samples with RQ ≥ 1",value:highRisk,          icon:AlertTriangle,   color:C.yellow  },
-    { label:"Max RQ (Eco)",       value:maxEco.toFixed(4), icon:Beaker,          color:C.accent  },
-    { label:"Max RQ (AMR)",       value:maxAmr.toFixed(4), icon:Shield,          color:"#7C3AED" },
+    { label:"Max RQ (Eco)",       value:maxEco.toFixed(3), icon:Beaker,          color:C.accent  },
+    { label:"Max RQ (AMR)",       value:maxAmr.toFixed(3), icon:Shield,          color:"#7C3AED" },
   ];
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -874,10 +874,10 @@ export default function RQPage() {
                                     <td className="px-2 md:px-3 py-2">{r.pnec_eco ?? '—'}</td>
                                     <td className="px-2 md:px-3 py-2">{r.pnec_amr ?? '—'}</td>
                                     <td className="px-2 md:px-3 py-2 font-bold" style={{ color:r.rq_eco!=null?riskLevel(r.rq_eco,thresholds).color:C.textLight }}>
-                                      {r.rq_eco!=null?r.rq_eco.toFixed(4):'—'}
+                                      {r.rq_eco!=null?r.rq_eco.toFixed(3):'—'}
                                     </td>
                                     <td className="px-2 md:px-3 py-2 font-bold" style={{ color:r.rq_amr!=null?riskLevel(r.rq_amr,thresholds).color:C.textLight }}>
-                                      {r.rq_amr!=null?r.rq_amr.toFixed(4):'—'}
+                                      {r.rq_amr!=null?r.rq_amr.toFixed(3):'—'}
                                     </td>
                                     <td className="px-2 md:px-3 py-2">{r.rq_eco!=null?<RiskBadge value={r.rq_eco} thresholds={thresholds}/>:'—'}</td>
                                     <td className="px-2 md:px-3 py-2">{r.rq_amr!=null?<RiskBadge value={r.rq_amr} thresholds={thresholds}/>:'—'}</td>
@@ -948,7 +948,7 @@ export default function RQPage() {
                                    tickFormatter={v => v >= 1 ? Number(v.toFixed(0)).toLocaleString() : v.toFixed(3)}
                                    label={!isMobile ? { value:'RQ (log scale)', angle:-90, position:'insideLeft', fontSize:12, fill:C.textMid, offset:10 } : undefined}/>
                             <Tooltip formatter={(v, _, props) => [
-                              props.payload.ecoMax != null ? props.payload.ecoMax.toFixed(4) : '—', 'Eco Toxicity'
+                              props.payload.ecoMax != null ? props.payload.ecoMax.toFixed(3) : '—', 'Eco Toxicity'
                             ]}/>
                             <ReferenceLine y={refLine1} stroke={C.yellow}  strokeDasharray="5 5" label={{ value:`${refLine1}`,  position:'insideTopRight', fill:C.yellow,  fontSize:12 }}/>
                             <ReferenceLine y={refLine2} stroke={C.accent} strokeDasharray="5 5" label={{ value:`${refLine2}`, position:'insideTopRight', fill:C.accent, fontSize:12 }}/>
@@ -971,7 +971,7 @@ export default function RQPage() {
                                    tickFormatter={v => v >= 1 ? Number(v.toFixed(0)).toLocaleString() : v.toFixed(3)}
                                    label={!isMobile ? { value:'RQ (log scale)', angle:-90, position:'insideLeft', fontSize:12, fill:C.textMid, offset:10 } : undefined}/>
                             <Tooltip formatter={(v, _, props) => [
-                              props.payload.amrMax != null ? props.payload.amrMax.toFixed(4) : '—', 'AMR'
+                              props.payload.amrMax != null ? props.payload.amrMax.toFixed(3) : '—', 'AMR'
                             ]}/>
                             <ReferenceLine y={refLine1} stroke={C.yellow}  strokeDasharray="5 5" label={{ value:`${refLine1}`,  position:'insideTopRight', fill:C.yellow,  fontSize:12 }}/>
                             <ReferenceLine y={refLine2} stroke={C.accent} strokeDasharray="5 5" label={{ value:`${refLine2}`, position:'insideTopRight', fill:C.accent, fontSize:12 }}/>
@@ -1023,19 +1023,19 @@ export default function RQPage() {
                               <div className="grid grid-cols-2 gap-x-6 gap-y-1 mt-2">
                                 <div>
                                   <span style={{ color:C.textMid, fontSize:13 }}>Max RQ (Eco Tox): </span>
-                                  <span style={{ color:lvl.color, fontWeight:700, fontSize:15 }}>{maxEco!=null?maxEco.toFixed(4):'—'}</span>
+                                  <span style={{ color:lvl.color, fontWeight:700, fontSize:15 }}>{maxEco!=null?maxEco.toFixed(3):'—'}</span>
                                 </div>
                                 <div>
                                   <span style={{ color:C.textMid, fontSize:13 }}>Max RQ (AMR): </span>
-                                  <span style={{ color:lvl.color, fontWeight:700, fontSize:15 }}>{maxAmr!=null?maxAmr.toFixed(4):'—'}</span>
+                                  <span style={{ color:lvl.color, fontWeight:700, fontSize:15 }}>{maxAmr!=null?maxAmr.toFixed(3):'—'}</span>
                                 </div>
                                 <div>
                                   <span style={{ color:C.textMid, fontSize:13 }}>Min RQ (Eco Tox): </span>
-                                  <span style={{ color:C.textMid, fontWeight:600, fontSize:15 }}>{minEco!=null?minEco.toFixed(4):'—'}</span>
+                                  <span style={{ color:C.textMid, fontWeight:600, fontSize:15 }}>{minEco!=null?minEco.toFixed(3):'—'}</span>
                                 </div>
                                 <div>
                                   <span style={{ color:C.textMid, fontSize:13 }}>Min RQ (AMR): </span>
-                                  <span style={{ color:C.textMid, fontWeight:600, fontSize:15 }}>{minAmr!=null?minAmr.toFixed(4):'—'}</span>
+                                  <span style={{ color:C.textMid, fontWeight:600, fontSize:15 }}>{minAmr!=null?minAmr.toFixed(3):'—'}</span>
                                 </div>
                               </div>
                             </div>

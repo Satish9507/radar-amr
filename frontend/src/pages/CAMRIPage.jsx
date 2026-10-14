@@ -15,7 +15,8 @@ import * as XLSX from "xlsx";
 import Header  from "../components/Header";
 import NavBar  from "../components/NavBar";
 import Footer  from "../components/Footer";
-import { validateCAMRI, calculateCAMRI, downloadCAMRITemplate, getModuleConfig } from "../services/api";
+import { validateCAMRI, calculateCAMRI, downloadCAMRITemplate, getModuleConfig, fetchCAMRICoefficients } from "../services/api";
+import { fmtDate } from "../utils/dateUtils";
 
 // ─── Colour palette (purple primary, same structure as QMRA/RQ) ───────────────
 const C = {
@@ -308,6 +309,103 @@ const Instructions = () => {
               Results are relative indices (0–1), not absolute risk estimates.
             </p>
           </div>
+
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Coefficient documentation panel ─────────────────────────────────────────
+const CoefficientsPanel = ({ arb = [], arg = [] }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ background: C.cardBg, border: `1px solid ${C.border}` }} className="rounded-xl overflow-hidden">
+      <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between px-4 py-3"
+              style={{ background: "none", border: "none", cursor: "pointer" }}>
+        <div className="flex items-center gap-2">
+          <FileText size={15} color={C.primary}/>
+          <span style={{ color: C.textDark, fontWeight: 600, fontSize: 16 }}>Coefficient Reference — ARB &amp; ARG Burden Weights</span>
+        </div>
+        <ChevronDown size={15} color={C.textMid}
+                     style={{ transform: open ? "rotate(180deg)" : "none", transition: "0.2s" }}/>
+      </button>
+
+      {open && (
+        <div style={{ borderTop: `1px solid ${C.border}` }} className="p-4 md:p-5 space-y-4">
+
+          {/* ARB table */}
+          <div>
+            <p style={{ color: C.textDark, fontWeight: 600, fontSize: 15 }} className="mb-3">
+              ARB — Antibiotic-Resistant Bacteria (CFU/mL)
+            </p>
+            <p style={{ color: C.textMid, fontSize: 13, marginBottom: 10 }}>
+              DALY-based burden weights from Cassini et al. (2019). Used in Step 3 to weight each organism–antibiotic pair by disease burden.
+            </p>
+            <div className="overflow-x-auto">
+              <table style={{ borderCollapse: "collapse", fontSize: 13, width: "100%" }}>
+                <thead>
+                  <tr style={{ background: "#F8FAFC" }}>
+                    {["Column", "Organism × Antibiotic", "DALY Coeff.", "Priority Rank"].map(h => (
+                      <th key={h} style={{ padding: "6px 10px", textAlign: "left", color: C.textMid,
+                                           border: `1px solid ${C.border}`, fontWeight: 600, fontSize: 12 }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {arb.map(r => (
+                    <tr key={r.column}>
+                      <td style={{ padding: "5px 10px", border: `1px solid ${C.border}`, fontFamily: "monospace", color: C.primary, fontSize: 13 }}>{r.column}</td>
+                      <td style={{ padding: "5px 10px", border: `1px solid ${C.border}`, color: C.textDark }}>{r.label}</td>
+                      <td style={{ padding: "5px 10px", border: `1px solid ${C.border}`, fontWeight: 600, color: C.textDark, textAlign: "center" }}>{r.coefficient}</td>
+                      <td style={{ padding: "5px 10px", border: `1px solid ${C.border}`, color: C.textMid, textAlign: "center" }}>{r.priority_rank}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ARG table */}
+          <div>
+            <p style={{ color: C.textDark, fontWeight: 600, fontSize: 15 }} className="mb-3">
+              ARG — Antibiotic Resistance Genes (copies/mL)
+            </p>
+            <p style={{ color: C.textMid, fontSize: 13, marginBottom: 10 }}>
+              Priority rank-based coefficients from Zhang et al. (2019) ARG Ranker. Higher rank = greater clinical concern.
+            </p>
+            <div className="overflow-x-auto">
+              <table style={{ borderCollapse: "collapse", fontSize: 13, width: "100%" }}>
+                <thead>
+                  <tr style={{ background: "#F8FAFC" }}>
+                    {["Column", "Gene", "Coeff.", "Priority Rank"].map(h => (
+                      <th key={h} style={{ padding: "6px 10px", textAlign: "left", color: C.textMid,
+                                           border: `1px solid ${C.border}`, fontWeight: 600, fontSize: 12 }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {arg.map(r => (
+                    <tr key={r.column}>
+                      <td style={{ padding: "5px 10px", border: `1px solid ${C.border}`, fontFamily: "monospace", color: "#7C3AED", fontSize: 13 }}>{r.column}</td>
+                      <td style={{ padding: "5px 10px", border: `1px solid ${C.border}`, color: C.textDark }}>{r.label}</td>
+                      <td style={{ padding: "5px 10px", border: `1px solid ${C.border}`, fontWeight: 600, color: C.textDark, textAlign: "center" }}>{r.coefficient}</td>
+                      <td style={{ padding: "5px 10px", border: `1px solid ${C.border}`, color: C.textMid, textAlign: "center" }}>{r.priority_rank}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 8 }} className="px-3 py-2.5 flex items-start gap-2">
+            <AlertTriangle size={14} color={C.yellow} style={{ flexShrink: 0, marginTop: 1 }}/>
+            <p style={{ color: "#92400E", fontSize: 14 }}>
+              Coefficients are used in Step 3: S = N × w, where N is the min-max normalised concentration and w is the coefficient above.
+              Values are sourced from the literature and stored in the database — updates reflect immediately.
+            </p>
+          </div>
+
         </div>
       )}
     </div>
@@ -590,7 +688,8 @@ const SiteBoxPlot = ({ results, scoreKey, scoreLabel, siteCols, thresholds = DEF
 export default function CAMRIPage() {
   const navigate = useNavigate();
 
-  const [thresholds, setThresholds] = useState(DEFAULT_RISK_LEVELS);
+  const [thresholds,    setThresholds]    = useState(DEFAULT_RISK_LEVELS);
+  const [coefficients,  setCoefficients]  = useState({ arb: [], arg: [] });
 
   const [arbFile,    setArbFile]    = useState(null);
   const [argFile,    setArgFile]    = useState(null);
@@ -622,13 +721,16 @@ export default function CAMRIPage() {
 
   const TABLE_PAGE_SIZE = 20;
 
-  // Load risk thresholds from module_config
+  // Load risk thresholds and coefficients on mount
   useEffect(() => {
     getModuleConfig('CAMRI')
       .then(cfg => {
         const levels = cfg.risk_thresholds?.levels;
         if (Array.isArray(levels) && levels.length > 0) setThresholds(levels);
       })
+      .catch(() => {});
+    fetchCAMRICoefficients()
+      .then(data => setCoefficients(data))
       .catch(() => {});
   }, []);
 
@@ -774,6 +876,8 @@ export default function CAMRIPage() {
         {!results && (
           <div className="space-y-4">
             <Instructions/>
+
+            <CoefficientsPanel arb={coefficients.arb} arg={coefficients.arg}/>
 
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] gap-4 md:gap-6">
 
@@ -1014,6 +1118,7 @@ export default function CAMRIPage() {
                 )}
               </div>
             </div>
+
           </div>
         )}
 
@@ -1141,7 +1246,7 @@ export default function CAMRIPage() {
                                 </td>
                                 <td className="px-2 md:px-3 py-2" style={{ color: C.textDark, fontWeight: 600 }}>{r.sample_id}</td>
                                 <td className="px-2 md:px-3 py-2" style={{ color: C.textMid }}>{r.site}</td>
-                                <td className="px-2 md:px-3 py-2" style={{ color: C.textMid }}>{r.date}</td>
+                                <td className="px-2 md:px-3 py-2" style={{ color: C.textMid }}>{fmtDate(r.date)}</td>
                                 <td className="px-2 md:px-3 py-2" style={{ color: C.textMid }}>{r.category}</td>
                                 {calcMode !== "arg_only" && (
                                   <td className="px-2 md:px-3 py-2" style={{ color: C.textDark, fontVariantNumeric: "tabular-nums" }}>
@@ -1266,13 +1371,13 @@ export default function CAMRIPage() {
                                                     borderRadius: 8, padding: "10px 14px", fontSize: 13,
                                                     boxShadow: "0 4px 16px rgba(0,0,0,0.1)" }}>
                                         <p style={{ fontWeight: 700, color: C.textDark, marginBottom: 4 }}>{d.name}</p>
-                                        <p style={{ color: "#7C3AED" }}>ℜ_ARB (Bacteria): {d.r_arb.toFixed(4)}</p>
+                                        <p style={{ color: "#059669" }}>ℜ_ARB (Bacteria): {d.r_arb.toFixed(4)}</p>
                                         <p style={{ color: "#2563EB" }}>ℜ_ARG (Genes): {d.r_arg.toFixed(4)}</p>
                                       </div>
                                     );
                                   }}/>
                                   <Legend verticalAlign="top" wrapperStyle={{ fontSize: 13, paddingBottom: 8 }}/>
-                                  <Bar dataKey="r_arb" name="ℜ_ARB (Bacteria)" fill="#7C3AED" radius={[3, 3, 0, 0]}/>
+                                  <Bar dataKey="r_arb" name="ℜ_ARB (Bacteria)" fill="#059669" radius={[3, 3, 0, 0]}/>
                                   <Bar dataKey="r_arg" name="ℜ_ARG (Genes)"    fill="#2563EB" radius={[3, 3, 0, 0]}/>
                                 </BarChart>
                               </ResponsiveContainer>
@@ -1291,7 +1396,7 @@ export default function CAMRIPage() {
                 {/* ── Sensitivity chart ── */}
                 {activeTab === "sensitivity" && (
                   <div>
-                    <p style={{ color: C.textMid, fontSize: 13, marginBottom: 16 }}>
+                    <p style={{ color: C.textMid, fontSize: 13, marginBottom: 12 }}>
                       How ℜ_AMR scores shift as α varies from 0.6 to 0.9 · samples with greater ARB/ARG divergence show wider spread
                     </p>
                     {sensChartData.length === 0

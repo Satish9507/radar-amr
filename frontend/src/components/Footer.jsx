@@ -47,6 +47,7 @@ export default function Footer() {
             { label: "Risk Quotient (RQ)", route: "/rq"    },
             { label: "QMRA",               route: "/qmra"  },
             { label: "CAMRI",              route: "/camri" },
+            { label: "RADAR Score",        route: "/radar" },
           ].map(t => (
             <button key={t.route} onClick={() => navigate(t.route)}
               style={{

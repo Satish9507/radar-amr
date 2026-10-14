@@ -10,4 +10,5 @@ urlpatterns = [
     path('api/v1/rq/', include('apps.module_rq.urls')),
     path('api/v1/qmra/',  include('apps.module_qmra.urls')),
     path('api/v1/camri/', include('apps.module_camri.urls')),
+    path('api/v1/radar/', include('apps.module_radar.urls')),
 ]

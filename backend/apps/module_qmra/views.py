@@ -115,8 +115,17 @@ class QMRACalculateView(APIView):
 
 class QMRAPathogenListView(APIView):
     def get(self, request):
-        profiles = PathogenProfile.objects.filter(is_active=True).values(
-            'pathogen_name', 'display_strain', 'model_type',
-            'alpha', 'beta', 'k', 'illness_ratio', 'daly_weight', 'param_source',
-        )
-        return Response({'status': 'success', 'pathogens': list(profiles)})
+        profiles = PathogenProfile.objects.filter(is_active=True).order_by('pathogen_name')
+        data = [
+            {
+                'pathogen_name':       p.pathogen_name,
+                'display_strain':      p.display_strain,
+                'model_type':          p.model_type,
+                'illness_ratio':       p.illness_ratio,
+                'param_source':        p.param_source,
+                'param_source_amr':    p.param_source_amr,
+                'endpoints':           sorted(p.endpoint_daly_params.keys()) if p.endpoint_daly_params else [],
+            }
+            for p in profiles
+        ]
+        return Response({'status': 'success', 'pathogens': data})

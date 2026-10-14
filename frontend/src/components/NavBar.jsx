@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
-import { Shield, Beaker, Activity } from "lucide-react";
+import { Shield, Beaker, Activity, Target } from "lucide-react";
 import { getModuleConfigs } from "../services/api";
 
 const MODULE_META = {
   RQ:    { path: "/rq",    icon: Beaker,   name: "Risk Quotient", color: "#1E40AF", hoverBg: "rgba(59,130,246,0.18)"  },
   QMRA:  { path: "/qmra",  icon: Shield,   name: "QMRA",          color: "#0D9488", hoverBg: "rgba(13,148,136,0.18)" },
   CAMRI: { path: "/camri", icon: Activity, name: "CAMRI",         color: "#7C3AED", hoverBg: "rgba(124,58,237,0.18)" },
+  RADAR: { path: "/radar", icon: Target,   name: "RADAR Score",   color: "#0891B2", hoverBg: "rgba(8,145,178,0.18)"  },
 };
 const NAV_ORDER     = Object.keys(MODULE_META);
-const ALWAYS_ACTIVE = new Set(["RQ", "QMRA", "CAMRI"]);
+const ALWAYS_ACTIVE = new Set(["RQ", "QMRA", "CAMRI", "RADAR"]);
 
 export default function NavBar() {
   const [modules, setModules] = useState([]);

@@ -44,3 +44,26 @@ ARG_LABELS = {
 
 # Metadata columns common to both ARB and ARG templates
 FIXED_META_COLS = {"Sample_ID", "Site", "Month", "Date", "Category", "Sub_category"}
+
+
+def get_coefficients_from_db():
+    """
+    Load ARB and ARG coefficient dicts from the DB.
+    Falls back to the hardcoded values above if the table is empty or unavailable
+    (e.g. before the first migration runs).
+    Returns: (arb_coeffs, arg_coeffs, arb_labels, arg_labels)
+    """
+    try:
+        from apps.module_camri.models import CAMRICoefficient
+        qs = list(CAMRICoefficient.objects.all())
+        if not qs:
+            raise LookupError('CAMRICoefficient table is empty')
+        arb_coeffs = {c.column_name: c.coefficient for c in qs if c.type == 'arb'}
+        arg_coeffs = {c.column_name: c.coefficient for c in qs if c.type == 'arg'}
+        arb_labels = {c.column_name: c.label        for c in qs if c.type == 'arb'}
+        arg_labels = {c.column_name: c.label        for c in qs if c.type == 'arg'}
+        if arb_coeffs and arg_coeffs:
+            return arb_coeffs, arg_coeffs, arb_labels, arg_labels
+    except Exception:
+        pass
+    return ARB_COEFFICIENTS, ARG_COEFFICIENTS, ARB_LABELS, ARG_LABELS
