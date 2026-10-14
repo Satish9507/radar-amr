@@ -97,51 +97,70 @@ Methodology: [`docs/methodology/radar_methodology.md`](docs/methodology/radar_me
 amr-tool/
 ├── frontend/
 │   ├── src/
+│   │   ├── main.jsx                      # React entry point
+│   │   ├── App.jsx                       # Router — all module routes
 │   │   ├── pages/
-│   │   │   ├── LandingPage.jsx       # Home page with tool overview
-│   │   │   ├── RQPage.jsx            # Risk Quotient module
-│   │   │   ├── QMRAPage.jsx          # QMRA module
-│   │   │   ├── CAMRIPage.jsx         # CAMRI module
-│   │   │   └── RADARPage.jsx         # RADAR Score module
+│   │   │   ├── LandingPage.jsx           # Home page with tool overview
+│   │   │   ├── RQPage.jsx                # Risk Quotient module
+│   │   │   ├── QMRAPage.jsx              # QMRA module
+│   │   │   ├── CAMRIPage.jsx             # CAMRI module
+│   │   │   ├── RADARPage.jsx             # RADAR Score module
+│   │   │   └── ComingSoon.jsx            # Placeholder for future modules
 │   │   ├── components/
-│   │   │   ├── Header.jsx            # Page header (links back to home)
-│   │   │   ├── NavBar.jsx            # Module navigation bar
-│   │   │   └── Footer.jsx            # Shared footer
+│   │   │   ├── Header.jsx                # Page header (links back to home)
+│   │   │   ├── NavBar.jsx                # Module navigation bar
+│   │   │   ├── Footer.jsx                # Shared footer
+│   │   │   └── SensitivityHeatmap.jsx    # Monte Carlo heatmap (QMRA)
 │   │   ├── services/
-│   │   │   └── api.js                # All API calls
+│   │   │   └── api.js                    # All API calls
 │   │   ├── utils/
-│   │   │   └── dateUtils.js          # Shared fmtDate() — ISO → "DD Mmm YYYY"
+│   │   │   └── dateUtils.js              # Shared fmtDate() — ISO → "DD Mmm YYYY"
 │   │   └── hooks/
 │   │       └── useBreakpoint.js
-│   ├── vercel.json                   # SPA routing config for Vercel
+│   ├── vercel.json                       # SPA routing config for Vercel
 │   └── vite.config.js
 │
 ├── backend/
 │   ├── core/
-│   │   ├── settings.py               # Django settings (env-driven)
+│   │   ├── settings.py                   # Django settings (env-driven)
 │   │   ├── urls.py
 │   │   └── wsgi.py
 │   ├── apps/
-│   │   ├── module_compounds/         # PNEC compound reference data
-│   │   ├── config/                   # Module config & risk thresholds
-│   │   ├── module_rq/                # RQ calculation engine & API
-│   │   ├── module_qmra/              # QMRA calculation engine & API
-│   │   ├── module_camri/             # CAMRI calculation engine & API
-│   │   └── module_radar/             # RADAR Score engine & API (stateless)
-│   ├── Procfile                      # Gunicorn start for deployment
-│   ├── railway.json                  # Railway deploy config (optional)
+│   │   ├── module_compounds/             # PNEC compound reference data
+│   │   ├── config/                       # Module config & risk thresholds
+│   │   ├── module_rq/                    # RQ calculation engine & API
+│   │   ├── module_qmra/                  # QMRA calculation engine & API
+│   │   ├── module_camri/                 # CAMRI calculation engine & API
+│   │   └── module_radar/                 # RADAR Score engine & API (stateless)
+│   ├── Procfile                          # Gunicorn start for deployment
+│   ├── railway.json                      # Railway deploy config (optional)
 │   ├── requirements.txt
 │   └── manage.py
 │
 └── docs/
     ├── methodology/
-    │   └── radar_methodology.md      # Full RADAR Score methodology spec
+    │   ├── rq_methodology.md             # RQ methodology spec
+    │   ├── qmra_methodology.md           # QMRA methodology spec
+    │   ├── camri_methodology.md          # CAMRI methodology spec
+    │   └── radar_methodology.md          # RADAR Score methodology spec
     ├── dataset/
-    │   ├── RADAR_Test_QMRA.xlsx      # Test dataset for QMRA input
-    │   ├── RADAR_Test_CAMRI_ARG.xlsx # Test dataset for CAMRI ARG input
-    │   └── RADAR_Test_RQ.xlsx        # Test dataset for RQ input
+    │   ├── RQ_Test_Dataset.xlsx          # RQ module test data
+    │   ├── QMRA_Test_Dataset_v2.xlsx     # QMRA module test data
+    │   ├── CAMRI_ARB_Test_Dataset.xlsx   # CAMRI ARB test data
+    │   ├── CAMRI_ARG_Test_Dataset.xlsx   # CAMRI ARG test data
+    │   ├── RADAR_Test_QMRA.xlsx          # RADAR — QMRA input test data
+    │   ├── RADAR_Test_CAMRI_ARG.xlsx     # RADAR — CAMRI ARG input test data
+    │   └── RADAR_Test_RQ.xlsx            # RADAR — RQ input test data
+    ├── templates/
+    │   ├── RQ_Input_Template.xlsx        # RQ Excel input template
+    │   ├── QMRA_Input_Template.xlsx      # QMRA Excel input template
+    │   ├── CAMRI_ARB_Input_Template.xlsx # CAMRI ARB Excel input template
+    │   └── CAMRI_ARG_Input_Template.xlsx # CAMRI ARG Excel input template
+    ├── reference/
+    │   └── PNEC_Reference_Table.xlsx     # PNEC reference values for seeding
     └── deployment/
-        └── tmp_deployment.md         # Step-by-step free deployment guide
+        ├── tmp_deployment.md             # Step-by-step free deployment guide (Render + Vercel)
+        └── DEPLOYMENT.md                 # Additional deployment notes
 ```
 
 ---
