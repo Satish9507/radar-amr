@@ -1,6 +1,6 @@
 # RADAR — Risk Assessment Dashboard for AMR Response
 
-A free, browser-based full-stack platform for environmental AMR risk assessment. Supports three specialist modules: **Risk Quotient (RQ)**, **Quantitative Microbial Risk Assessment (QMRA)**, and **Combined AMR Relative Index (CAMRI)**.
+A free, browser-based full-stack platform for environmental AMR risk assessment. Supports four specialist modules: **Risk Quotient (RQ)**, **Quantitative Microbial Risk Assessment (QMRA)**, **Combined AMR Relative Index (CAMRI)**, and **RADAR Score** (multi-criteria composite integration).
 
 Designed for environmental scientists, public health researchers, and water quality engineers. No login required, no data stored — all calculations run server-side and return results directly.
 
@@ -50,6 +50,35 @@ Reference: Goh et al. 2022, *Journal of Hazardous Materials*.
 
 ---
 
+### RADAR Score — Multi-Criteria Composite Risk Index
+Integrates outputs from QMRA, CAMRI (ARG only), and RQ into a single normalised composite score (0–1) per sample, with user-adjustable weights.
+
+**Formula:**
+```
+RADAR = (W_A × S_ARB) + (W_B × S_ARG) + (W_C × S_PPCP)
+```
+
+| Component | Source | Normalisation | Default Weight |
+|-----------|--------|---------------|----------------|
+| S_ARB | QMRA — DALYs/yr | `min(Σ DALY / 1×10⁻⁶, 1.0)` | W_A = 0.50 |
+| S_ARG | CAMRI ARG — ℜ_ARG | Used directly (already 0–1) | W_B = 0.30 |
+| S_PPCP | RQ — Hazard Index | `min(Σ max(AMR_RQ, ECO_RQ), 1.0)` | W_C = 0.20 |
+
+Constraint: W_A + W_B + W_C = 1.0 at all times. Missing modules redistribute their weight proportionally.
+
+| Risk Tier | RADAR Score | Colour |
+|-----------|-------------|--------|
+| Negligible | 0.00 – 0.25 | Green |
+| Low | 0.25 – 0.50 | Blue |
+| Moderate | 0.50 – 0.75 | Amber |
+| High | 0.75 – 1.00 | Red |
+
+Samples are matched across modules by **Site + Date**. At least 2 of the 3 module files must be provided.
+Reference: WHO GDWQ 4th ed. (2022) · EPA Cumulative Risk Assessment (2000) · Bengtsson-Palme & Larsson (2016) · Goh et al. (2022).
+Methodology: [`docs/methodology/radar_methodology.md`](docs/methodology/radar_methodology.md)
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -72,13 +101,16 @@ amr-tool/
 │   │   │   ├── LandingPage.jsx       # Home page with tool overview
 │   │   │   ├── RQPage.jsx            # Risk Quotient module
 │   │   │   ├── QMRAPage.jsx          # QMRA module
-│   │   │   └── CAMRIPage.jsx         # CAMRI module
+│   │   │   ├── CAMRIPage.jsx         # CAMRI module
+│   │   │   └── RADARPage.jsx         # RADAR Score module
 │   │   ├── components/
 │   │   │   ├── Header.jsx            # Page header (links back to home)
 │   │   │   ├── NavBar.jsx            # Module navigation bar
 │   │   │   └── Footer.jsx            # Shared footer
 │   │   ├── services/
 │   │   │   └── api.js                # All API calls
+│   │   ├── utils/
+│   │   │   └── dateUtils.js          # Shared fmtDate() — ISO → "DD Mmm YYYY"
 │   │   └── hooks/
 │   │       └── useBreakpoint.js
 │   ├── vercel.json                   # SPA routing config for Vercel
@@ -94,13 +126,20 @@ amr-tool/
 │   │   ├── config/                   # Module config & risk thresholds
 │   │   ├── module_rq/                # RQ calculation engine & API
 │   │   ├── module_qmra/              # QMRA calculation engine & API
-│   │   └── module_camri/             # CAMRI calculation engine & API
+│   │   ├── module_camri/             # CAMRI calculation engine & API
+│   │   └── module_radar/             # RADAR Score engine & API (stateless)
 │   ├── Procfile                      # Gunicorn start for deployment
 │   ├── railway.json                  # Railway deploy config (optional)
 │   ├── requirements.txt
 │   └── manage.py
 │
 └── docs/
+    ├── methodology/
+    │   └── radar_methodology.md      # Full RADAR Score methodology spec
+    ├── dataset/
+    │   ├── RADAR_Test_QMRA.xlsx      # Test dataset for QMRA input
+    │   ├── RADAR_Test_CAMRI_ARG.xlsx # Test dataset for CAMRI ARG input
+    │   └── RADAR_Test_RQ.xlsx        # Test dataset for RQ input
     └── deployment/
         └── tmp_deployment.md         # Step-by-step free deployment guide
 ```
@@ -156,6 +195,8 @@ python manage.py load_module_config          # RQ module config & thresholds
 python manage.py load_qmra_module_config     # QMRA module config & thresholds
 python manage.py load_pathogen_profiles      # QMRA pathogen dose-response data
 python manage.py load_camri_module_config    # CAMRI module config & thresholds
+python manage.py load_camri_coefficients     # CAMRI ARB/ARG burden coefficients
+python manage.py load_radar_module_config    # RADAR Score module config
 
 python manage.py runserver 8000
 ```
@@ -226,6 +267,32 @@ In production, the token is stored as `VITE_API_TOKEN` in the Vercel environment
 | `GET` | `/api/v1/camri/template/arg/` | Download ARG Excel template |
 | `GET` | `/api/v1/config/CAMRI/` | Get CAMRI module config and risk thresholds |
 
+### RADAR Score
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/v1/radar/calculate/` | Upload 2–3 module files, returns per-sample RADAR scores and site rollup |
+
+**Request fields (multipart/form-data):**
+
+| Field | Type | Required |
+|-------|------|----------|
+| `qmra_file` | File (.xlsx/.xls) | Optional (at least 2 of 3) |
+| `camri_arg_file` | File (.xlsx/.xls) | Optional (at least 2 of 3) |
+| `rq_file` | File (.xlsx/.xls) | Optional (at least 2 of 3) |
+| `w_a` | Float 0–1 | Optional (default 0.50) |
+| `w_b` | Float 0–1 | Optional (default 0.30) |
+| `w_c` | Float 0–1 | Optional (default 0.20) |
+
+**Response fields:**
+
+| Field | Description |
+|-------|-------------|
+| `results` | Per-sample list: site, date, s_arb, s_arg, s_ppcp, radar_score, risk_tier, w_a/b/c_used, modules_used |
+| `site_summary` | Per-site rollup: mean RADAR, mean component scores, risk tier |
+| `warnings` | Samples excluded due to single-module match |
+| `errors` | Rows excluded during individual module processing |
+
 ---
 
 ## Excel Template Formats
@@ -247,6 +314,8 @@ Fixed columns across all templates: `Sample_ID`, `Site`, `Month`, `Date`, `Categ
 **CAMRI ARB template** — data columns are resistant bacteria types: `Ec_CAZ`, `Pseu_MEM`, `Kleb_CAZ`, `Kleb_MEM`, `Ent_VAN`, `Ec_MEM`. Units: `CFU/mL`.
 
 **CAMRI ARG template** — data columns are resistance genes: `blaKPC`, `blaCTX_M`, `vanA`, `blaNDM`, `blaSHV`, `tetO`, `tetM`, `qnrA`. Units: `copies/mL`.
+
+**RADAR Score** — uses the same raw Excel files as the individual modules above. No separate template. Upload the QMRA, CAMRI ARG, and/or RQ files directly. Test datasets are provided in `docs/dataset/`.
 
 ---
 
@@ -291,6 +360,7 @@ To update thresholds locally, edit the seed command for the relevant module and 
 python manage.py load_module_config          # RQ
 python manage.py load_qmra_module_config     # QMRA
 python manage.py load_camri_module_config    # CAMRI
+python manage.py load_radar_module_config    # RADAR Score
 ```
 
 ---
