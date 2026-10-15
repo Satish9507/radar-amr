@@ -113,7 +113,8 @@ The `Endpoint` column selects which clinical syndrome parameters to use. Each pa
 | Endpoint | CFR (baseline) | CFR (resistant) | Duration baseline (days) | Duration resistant (days) | DW |
 |----------|---------------|----------------|-------------------------|--------------------------|-----|
 | Gastroenteritis | 0.001 | 0.001 | 7.0 | 7.0 | 0.067 |
-| UTI | 0.000 | 0.000 | 7.5 | 8.5 | 0.095 |
+| Watery Diarrhea | 0.001 | 0.001 | 3.6 | 3.6 | 0.131 |
+| UTI | 0.000 | 0.000 | 7.17 | 7.5 | 0.095 |
 | BSI | 0.137 | 0.178 | 8.69 | 12.25 | 0.128 |
 | RESP | 0.036 | 0.036 | 10.5 | 15.85 | 0.128 |
 
@@ -141,9 +142,28 @@ When `ARB_Concentration` is provided, the module runs a parallel calculation for
 1. The ARB concentration is treated as a separate input; all resistant organisms are assumed pathogenic (PF = 1.0)
 2. The same dose-response model is applied to the ARB dose
 3. DALYs are recalculated using the **resistant** CFR and duration for the selected endpoint
-4. **dDALY = DALY_ARB − DALY_baseline** — the additional burden attributable to resistance
 
-A positive dDALY means resistance increases the expected disease burden at that site.
+Two resistance-burden metrics are reported:
+
+### Naive dDALY
+
+```
+Naive dDALY = DALY_ARB − DALY_baseline
+```
+
+The net difference between the ARB-track DALY and the baseline DALY for the same row. Can be negative when the ARB concentration is lower than the total baseline concentration (e.g. the resistant sub-population contributes less total burden than the full pathogen pool).
+
+### Attributable dDALY
+
+```
+Attributable dDALY = P(ill | ARB dose) × (dpc_resistant − dpc_susceptible)
+```
+
+Where **dpc** (disability-per-case) = CFR × L + (1 − CFR) × DW × (duration / 365).
+
+This isolates the **resistance penalty** — the extra burden per case caused by resistance (longer illness, higher CFR) — applied only to individuals actually exposed to the resistant sub-population. Always ≥ 0.
+
+> Use Attributable dDALY as the primary resistance-burden metric. Naive dDALY is reported for completeness but conflates exposure magnitude with resistance severity.
 
 ---
 
@@ -198,6 +218,63 @@ Only `Sample_Type = Water` is currently supported. Food and aerosol pathways are
 
 ---
 
+## Sensitivity Analysis
+
+The sensitivity module runs a Monte Carlo Spearman rank correlation analysis to identify which uncertain input parameters most strongly drive annual infection probability and DALY burden. It applies to **E. coli only**, using Swimming and Kayaking/Wading exposure types.
+
+### Structure — Three panels
+
+| Panel | Pathotype | Outcome tracked |
+|-------|-----------|----------------|
+| DEC | Diarrhoeagenic E. coli (ETEC + EPEC + EIEC) | Diarrhoeal illness — resistance-independent |
+| UPEC susceptible | Uropathogenic E. coli, susceptible strain | UTI — susceptible sub-population |
+| UPEC ESBL/ARB | Uropathogenic E. coli, ESBL-resistant strain | UTI — resistant sub-population |
+
+Each panel produces a 4-column Spearman matrix: **Swim: P(ill)**, **Swim: DALY**, **Kayak: P(ill)**, **Kayak: DALY**.
+
+### DEC pathway
+
+The DEC fraction of total E. coli is drawn from a logit-normal random-effects meta-analysis (DerSimonian-Laird; Jarocki 2024, Hamilton 2010, Hamelin 2006):
+
+```
+logit(p_DEC) ~ N(−3.65, 0.86²)
+```
+
+Dose-response uses the beta-Poisson model (α = 0.1778, N₅₀ = 8.6 × 10⁷).
+
+### UPEC pathway
+
+UPEC fractions are drawn from literature-pooled Beta priors:
+
+| Fraction | Prior | Sources |
+|----------|-------|---------|
+| p_UPEC_susceptible | Beta(34.5, 662.5) | Johnson 2017 + Diallo 2013 (34/696 isolates) |
+| p_UPEC_ESBL | Beta(23.5, 316.5) | Franz 2015 + Hussain 2026 (23/339 isolates) |
+
+UTI illness durations are drawn from coupled PERT distributions sharing the same uniform quantile (to preserve the resistance penalty across draws):
+
+- Susceptible: PERT(4, 7, 11) → mean 7.17 days
+- ESBL/resistant: PERT(5, 7, 12) → mean 7.50 days
+
+### Ingestion volumes
+
+| Activity | Distribution | Mean |
+|----------|-------------|------|
+| Swimming | Gamma(shape=0.45, scale=60) mL/hr | 27 mL/hr |
+| Kayaking | Log-normal(ln 2.2, σ=0.94) mL/hr | 2.2 mL/hr |
+
+Swimming volumes follow Schets et al.; the Gamma parameterisation corrects an error in earlier versions that used a rate rather than scale parameter.
+
+### Events per year
+
+Both swim and kayak session frequencies are drawn independently from Uniform(12, 52.18) — a monthly minimum to an approximately weekly maximum.
+
+### Output
+
+Spearman ρ values close to ±1 indicate strong monotonic influence of the input on the output. Stars indicate statistical significance (*, **, ***). At n = 10,000, nearly all p-values reach significance; **|ρ| > 0.3** is the practical threshold for meaningful influence.
+
+---
+
 ## Limitations
 
 - Dose-response parameters are derived from challenge studies (human volunteer or animal); environmental strains may differ in virulence
@@ -212,7 +289,12 @@ Only `Sample_Type = Water` is currently supported. Food and aerosol pathways are
 
 - Haas, C.N., Rose, J.B., & Gerba, C.P. (1999). *Quantitative Microbial Risk Assessment*. Wiley.
 - Harb, C., & Hong, P.Y. (2017). Molecular-based detection of clinically relevant antibiotic-resistant bacteria in a drinking water treatment plant. *International Journal of Environmental Research and Public Health*, 14(12), 1540.
-- Goh, S.G., et al. (2023). Quantitative microbial risk assessment of antibiotic-resistant E. coli in Singapore waterways. *Water Research*.
+- Goh, S.G., et al. (2023). Quantitative microbial risk assessment of antibiotic-resistant E. coli in Singapore waterways. *Journal of Hazardous Materials*, 458, 132058.
 - Cassini, A., et al. (2019). Attributable deaths and DALYs caused by infections with antibiotic-resistant bacteria in the EU and EEA. *The Lancet Infectious Diseases*, 19(1), 56–66.
 - Bergmark, L., et al. (2024). Excess mortality and hospital stay attributable to VRE bloodstream infections. *Emerging Microbes & Infections*.
+- Jarocki, V.M., et al. (2024). Prevalence of diarrhoeagenic E. coli in recreational waters: systematic review and meta-analysis. *(DEC logit-normal prior — DerSimonian-Laird pooled estimate: logit mean −3.65, SD 0.86)*
+- Hamilton, A.J., et al. (2010). Quantitative microbial risk assessment models for consumption of raw vegetables irrigated with reclaimed water. *Applied and Environmental Microbiology*, 76(9), 3074–3083.
+- Hamelin, K., et al. (2006). A virulence and antimicrobial resistance DNA microarray detects a high frequency of virulence genes in Escherichia coli isolates from Great Lakes recreational waters. *Applied and Environmental Microbiology*, 72(6), 4200–4206.
+- Franz, E., et al. (2015). Risk factors and control of ESBL-producing *E. coli* in Dutch livestock. *(UPEC ESBL fraction prior — Franz 2015 + Hussain 2026: Beta(23.5, 316.5))*
+- Johnson, J.R., & Russo, T.A. (2017). Uropathogenic *Escherichia coli* as agents of diverse non-urinary tract extraintestinal infections. *Journal of Infectious Diseases*. *(UPEC susceptible fraction prior — Johnson 2017 + Diallo 2013: Beta(34.5, 662.5))*
 - WHO (2022). *Guidelines for Drinking-Water Quality*, 4th ed. incorporating 1st addendum.

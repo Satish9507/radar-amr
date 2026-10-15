@@ -21,7 +21,7 @@ DEACTIVATE = [
 _ECOLI_ENDPOINT_DALY = {
     'UTI': {
         'cfr_baseline': 0.000, 'cfr_resistant': 0.000,
-        'duration_baseline_days': 7.5, 'duration_resistant_days': 8.5,
+        'duration_baseline_days': 7.17, 'duration_resistant_days': 7.5,
         'disability_weight': 0.095,
     },
     'BSI': {
@@ -31,8 +31,8 @@ _ECOLI_ENDPOINT_DALY = {
     },
     'Watery Diarrhea': {
         'cfr_baseline': 0.001, 'cfr_resistant': 0.001,
-        'duration_baseline_days': 7.0, 'duration_resistant_days': 7.0,
-        'disability_weight': 0.067,
+        'duration_baseline_days': 3.6, 'duration_resistant_days': 3.6,
+        'disability_weight': 0.131,
     },
     'Gastroenteritis': {
         'cfr_baseline': 0.001, 'cfr_resistant': 0.001,

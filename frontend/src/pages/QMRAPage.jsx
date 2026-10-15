@@ -180,11 +180,16 @@ function triggerDownload(blob, filename) {
 
 function downloadCSV(data, thresholds, infectionThresholds) {
   const hasDdaly = data.some(r => r.d_daly != null);
+  const hasDdalyAttr = data.some(r => r.d_daly_attr != null);
   const headers = ["#", "Site", "Date", "Sample Type", "Exposure Type", "Pathogen", "Strain", "Disease", "Dose-Response Model",
                    "Concentration", "ARB Concentration", "Unit", "Log Reduction", "Volume (L)", "Events/Year",
                    "Pathogenic Fraction", "Dose", "P(infection)", "P(annual)", "Infection Risk (≥10⁻⁴)", "P(illness)",
                    "DALYs/yr (baseline)", "CFR Baseline", "DALY Risk (≥10⁻⁶)",
-                   ...(hasDdaly ? ["DALYs/yr (ARB)", "CFR Resistant", "dDALY", "DALY Risk (ARB)"] : [])];
+                   ...(hasDdaly ? [
+                     "DALYs/yr (ARB)", "CFR Resistant", "Naive dDALY",
+                     ...(hasDdalyAttr ? ["Attr. dDALY"] : []),
+                     "DALY Risk (ARB)",
+                   ] : [])];
   const rows = data.map((r, i) => [
     i + 1, r.site, r.date, r.sample_type, r.exposure_type ?? "", r.pathogen, r.strain, r.endpoint, r.model,
     r.concentration, r.arb_concentration ?? "", r.unit, r.log_reduction, r.volume_l, r.events_per_year,
@@ -197,6 +202,7 @@ function downloadCSV(data, thresholds, infectionThresholds) {
       r.daly_arb != null ? r.daly_arb.toExponential(2) : "",
       r.cfr_resistant ?? "",
       r.d_daly != null ? r.d_daly.toExponential(2) : "",
+      ...(hasDdalyAttr ? [r.d_daly_attr != null ? r.d_daly_attr.toExponential(2) : ""] : []),
       r.risk_label_arb ?? "",
     ] : []),
   ]);
@@ -209,12 +215,17 @@ function downloadXLSX(data, thresholds, infectionThresholds) {
   const wb = XLSX.utils.book_new();
 
   const hasDdaly = data.some(r => r.d_daly != null);
+  const hasDdalyAttr2 = data.some(r => r.d_daly_attr != null);
   const wsDetail = XLSX.utils.aoa_to_sheet([
     ["#", "Site", "Date", "Sample Type", "Exposure Type", "Pathogen", "Strain", "Disease", "Dose-Response Model",
      "Concentration", "ARB Conc.", "Unit", "Log Reduction", "Volume (L)", "Events/Year",
      "Path. Fraction", "Dose", "P(infection)", "P(annual)", "Infection Risk (≥10⁻⁴)", "P(illness)",
      "DALYs/yr (baseline)", "CFR Baseline", "DALY Risk (≥10⁻⁶)",
-     ...(hasDdaly ? ["DALYs/yr (ARB)", "CFR Resistant", "dDALY", "DALY Risk (ARB)"] : [])],
+     ...(hasDdaly ? [
+       "DALYs/yr (ARB)", "CFR Resistant", "Naive dDALY",
+       ...(hasDdalyAttr2 ? ["Attr. dDALY"] : []),
+       "DALY Risk (ARB)",
+     ] : [])],
     ...data.map((r, i) => [
       i + 1, r.site, r.date, r.sample_type, r.exposure_type ?? "", r.pathogen, r.strain, r.endpoint, r.model,
       r.concentration, r.arb_concentration ?? "", r.unit, r.log_reduction, r.volume_l, r.events_per_year,
@@ -227,6 +238,7 @@ function downloadXLSX(data, thresholds, infectionThresholds) {
         r.daly_arb != null ? r.daly_arb.toExponential(2) : "",
         r.cfr_resistant ?? "",
         r.d_daly != null ? r.d_daly.toExponential(2) : "",
+        ...(hasDdalyAttr2 ? [r.d_daly_attr != null ? r.d_daly_attr.toExponential(2) : ""] : []),
         r.risk_label_arb ?? "",
       ] : []),
     ]),
@@ -1186,7 +1198,10 @@ export default function QMRAPage() {
                                   { label: "Infection Risk",       sortKey: "p_annual",    minWidth: 120 },
                                   { label: "DALYs/yr",             sortKey: "daly"        },
                                   ...(displayResults.some(r => r.d_daly != null) ? [
-                                    { label: "dDALY",              sortKey: "d_daly"      },
+                                    { label: "Naive dDALY",        sortKey: "d_daly",      minWidth: 100 },
+                                  ] : []),
+                                  ...(displayResults.some(r => r.d_daly_attr != null) ? [
+                                    { label: "Attr. dDALY",        sortKey: "d_daly_attr", minWidth: 100 },
                                   ] : []),
                                 ].map(col => (
                                   <th key={col.label}
@@ -1228,15 +1243,24 @@ export default function QMRAPage() {
                                     <td className="px-2 md:px-3 py-2">{(() => { const ir = riskFromPInfection(r.p_annual, infectionThresholds); return <span style={{ background: ir.bg, color: ir.color, border: `1px solid ${ir.color}33` }} className="text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">{ir.label}</span>; })()}</td>
                                     <td className="px-2 md:px-3 py-2 font-bold" style={{ color: risk.color }}>{fmtSciJsx(r.daly_baseline ?? r.daly)}</td>
                                     {displayResults.some(d => d.d_daly != null) && (
-                                      <td className="px-2 md:px-3 py-2 font-bold" style={{ color: r.d_daly > 0 ? "#D97706" : C.textMid, fontSize: 13 }}>
+                                      <td className="px-2 md:px-3 py-2 font-bold"
+                                          title="Naive dDALY = DALY(ARB) − DALY(baseline). Can be negative when ARB exposure < total baseline."
+                                          style={{ color: r.d_daly != null && r.d_daly > 0 ? "#D97706" : C.textMid, fontSize: 13 }}>
                                         {r.d_daly != null ? fmtSciJsx(r.d_daly) : "—"}
+                                      </td>
+                                    )}
+                                    {displayResults.some(d => d.d_daly_attr != null) && (
+                                      <td className="px-2 md:px-3 py-2 font-bold"
+                                          title="Attributable dDALY = P(ill|ARB) × [DALY/case(resistant) − DALY/case(susceptible)]. Always ≥ 0. Isolates the resistance penalty."
+                                          style={{ color: r.d_daly_attr != null && r.d_daly_attr > 0 ? "#7C3AED" : C.textMid, fontSize: 13 }}>
+                                        {r.d_daly_attr != null ? fmtSciJsx(r.d_daly_attr) : "—"}
                                       </td>
                                     )}
                                   </tr>
                                 );
                               })}
                               {displayResults.length === 0 && (
-                                <tr><td colSpan={displayResults.some(r => r.d_daly != null) ? 17 : 16} className="text-center py-10"
+                                <tr><td colSpan={16 + (displayResults.some(r => r.d_daly != null) ? 1 : 0) + (displayResults.some(r => r.d_daly_attr != null) ? 1 : 0)} className="text-center py-10"
                                         style={{ color: C.textLight, fontSize: 15 }}>No rows match the current filters.</td></tr>
                               )}
                             </tbody>

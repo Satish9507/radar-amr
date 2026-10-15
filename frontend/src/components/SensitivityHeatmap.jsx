@@ -35,10 +35,10 @@ const RP = 140;   // right padding for last column's label overhang
 // ── Method chips (header metadata) ───────────────────────────────────────────
 function MethodChips() {
   const chips = [
-    { label: 'Spearman Rank ρ',       symbol: 'ρ',  bg: '#E6F4FA', color: '#1565A0', mono: true },
-    { label: 'n = 10,000 MC',         symbol: '⟳',  bg: '#EEF2FF', color: '#3730A3'             },
-    { label: 'E. coli · ETEC + UPEC', symbol: '⬡',  bg: '#F0FDF4', color: '#166534'             },
-    { label: 'Swimming · Kayaking',   symbol: '◎',  bg: '#FFF7ED', color: '#9A3412'             },
+    { label: 'Spearman Rank ρ',      symbol: 'ρ',  bg: '#E6F4FA', color: '#1565A0', mono: true },
+    { label: 'n = 10,000 MC',        symbol: '⟳',  bg: '#EEF2FF', color: '#3730A3'             },
+    { label: 'E. coli · DEC + UPEC', symbol: '⬡',  bg: '#F0FDF4', color: '#166534'             },
+    { label: 'Swimming · Kayaking',  symbol: '◎',  bg: '#FFF7ED', color: '#9A3412'             },
   ];
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 7 }}>
@@ -90,7 +90,7 @@ function StatsRow({ nRows, nTotal, nSim, hasArb, darkMode }) {
           <div style={{ fontSize: 16, fontWeight: 700, color: valColor, lineHeight: 1.1, fontFamily: "'JetBrains Mono', monospace" }}>
             {nRows}{nTotal != null && nTotal > nRows ? <span style={{ fontSize: 12, fontWeight: 400, color: lblColor }}> / {nTotal}</span> : null}
           </div>
-          <div style={{ fontSize: 12, color: lblColor, marginTop: 1 }}>E. coli rows {nTotal != null && nTotal > nRows ? '(swim + kayak / total)' : 'used'}</div>
+          <div style={{ fontSize: 12, color: lblColor, marginTop: 1 }}>E. coli rows {nTotal != null && nTotal > nRows ? '(swim+kayak / total)' : 'used'}</div>
         </div>
       </div>
 
@@ -124,7 +124,7 @@ function StatsRow({ nRows, nTotal, nSim, hasArb, darkMode }) {
           </svg>
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? '#FCD34D' : '#92400E' }}>No ARB data</div>
-            <div style={{ fontSize: 12, color: darkMode ? '#D97706' : '#B45309', marginTop: 1 }}>ESBL panel uses default concentrations</div>
+            <div style={{ fontSize: 12, color: darkMode ? '#D97706' : '#B45309', marginTop: 1 }}>UPEC-ESBL panel uses default concentrations</div>
           </div>
         </div>
       )}
@@ -146,7 +146,7 @@ function StatsRow({ nRows, nTotal, nSim, hasArb, darkMode }) {
           </svg>
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, color: darkMode ? '#86EFAC' : '#15803D' }}>ARB data present</div>
-            <div style={{ fontSize: 12, color: darkMode ? '#4ADE80' : '#166534', marginTop: 1 }}>ESBL panel uses measured concentrations</div>
+            <div style={{ fontSize: 12, color: darkMode ? '#4ADE80' : '#166534', marginTop: 1 }}>UPEC-ESBL panel uses measured concentrations</div>
           </div>
         </div>
       )}
@@ -229,7 +229,7 @@ function HowToRead({ darkMode }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             {[
               ['ESBL', 'Extended-Spectrum β-Lactamase'],
-              ['ETEC', 'Enterotoxigenic E. coli'],
+              ['DEC',  'Diarrhoeagenic E. coli (ETEC+EPEC+EIEC)'],
               ['UPEC', 'Uropathogenic E. coli'],
               ['DALY', 'Disability-Adjusted Life Year'],
               ['MC',   'Monte Carlo'],
@@ -290,7 +290,7 @@ function HeatmapSVG({ rowLabels, colLabels, rho, pvalues, darkMode }) {
   const nCols = colLabels.length;
   const W = LP + nCols * CW + RP;
   const H = TP + nRows * CH + BP;
-  const gapX = LP + 4 * CW;
+  const gapX = LP + Math.floor(nCols / 2) * CW;
   const labelColor = darkMode ? '#aaa' : '#555';
 
   return (
@@ -338,9 +338,9 @@ function HeatmapSVG({ rowLabels, colLabels, rho, pvalues, darkMode }) {
 // ── Idle placeholder ──────────────────────────────────────────────────────────
 function IdlePlaceholder({ textMid, border, darkMode }) {
   const items = [
-    { icon: '⬡', color: '#1B7FA3', title: 'E. coli only',       desc: 'ETEC (diarrhoea) and UPEC (UTI) pathotypes' },
+    { icon: '⬡', color: '#1B7FA3', title: 'E. coli only',       desc: 'DEC (diarrhoea) and UPEC (UTI) pathotypes' },
     { icon: '◎', color: '#3730A3', title: 'Swim & Kayak',        desc: 'Drinking Water rows are excluded' },
-    { icon: 'ρ', color: '#166534', title: 'Spearman correlation', desc: '11 inputs × 8 outputs per strain' },
+    { icon: 'ρ', color: '#166534', title: 'Spearman correlation', desc: '3 panels · 7–8 inputs × 4 outputs' },
     { icon: '⟳', color: '#9A3412', title: '10,000 iterations',   desc: 'Full MC parameter sampling' },
   ];
   const cardBg  = darkMode ? '#1E2330' : '#F8FAFC';
@@ -471,7 +471,7 @@ export default function SensitivityHeatmap({ results, C }) {
         <div style={{ padding: '2.5rem 0', textAlign: 'center' }}>
           <div style={{ marginBottom: 12 }}><Spinner color={accentColor} size={28} /></div>
           <div style={{ fontSize: 13, fontWeight: 600, color: accentColor, marginBottom: 4 }}>Sampling parameters…</div>
-          <div style={{ fontSize: 12, color: textMid }}>10,000 iterations across 11 uncertain inputs per strain</div>
+          <div style={{ fontSize: 12, color: textMid }}>10,000 iterations across 3 panels (DEC · UPEC-sus · UPEC-ESBL)</div>
         </div>
       )}
 
@@ -502,26 +502,37 @@ export default function SensitivityHeatmap({ results, C }) {
           {/* Colour scale */}
           <Legend darkMode={darkMode} />
 
-          {/* Susceptible panel */}
+          {/* DEC panel */}
           <PanelHeading
-            title="Susceptible strain"
-            subtitle="Parameters and outputs for the non-resistant E. coli population"
+            title="DEC — Diarrhoeagenic E. coli"
+            subtitle="Resistance-independent diarrhoea arm — total E. coli × DEC fraction (logit-normal meta-analysis)"
             darkMode={darkMode}
           />
           <div style={{ overflowX: 'auto', marginBottom: 28 }}>
-            <HeatmapSVG rowLabels={data.susceptible.row_labels} colLabels={data.col_labels}
-              rho={data.susceptible.rho} pvalues={data.susceptible.pvalues} darkMode={darkMode}/>
+            <HeatmapSVG rowLabels={data.dec.row_labels} colLabels={data.col_labels}
+              rho={data.dec.rho} pvalues={data.dec.pvalues} darkMode={darkMode}/>
           </div>
 
-          {/* ESBL panel */}
+          {/* UPEC susceptible panel */}
           <PanelHeading
-            title="ESBL / ARB strain"
-            subtitle="Parameters and outputs for the antibiotic-resistant E. coli population"
+            title="UPEC — Susceptible strain"
+            subtitle="UTI arm — susceptible E. coli fraction (Johnson 2017 + Diallo 2013)"
+            darkMode={darkMode}
+          />
+          <div style={{ overflowX: 'auto', marginBottom: 28 }}>
+            <HeatmapSVG rowLabels={data.upec_sus.row_labels} colLabels={data.col_labels}
+              rho={data.upec_sus.rho} pvalues={data.upec_sus.pvalues} darkMode={darkMode}/>
+          </div>
+
+          {/* UPEC ESBL panel */}
+          <PanelHeading
+            title="UPEC — ESBL / ARB strain"
+            subtitle="UTI arm — antibiotic-resistant ESBL fraction (Franz 2015 + Hussain 2026)"
             darkMode={darkMode}
           />
           <div style={{ overflowX: 'auto' }}>
-            <HeatmapSVG rowLabels={data.esbl.row_labels} colLabels={data.col_labels}
-              rho={data.esbl.rho} pvalues={data.esbl.pvalues} darkMode={darkMode}/>
+            <HeatmapSVG rowLabels={data.upec_esbl.row_labels} colLabels={data.col_labels}
+              rho={data.upec_esbl.rho} pvalues={data.upec_esbl.pvalues} darkMode={darkMode}/>
           </div>
 
           {/* How to read */}

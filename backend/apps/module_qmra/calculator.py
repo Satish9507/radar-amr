@@ -364,11 +364,12 @@ def run_qmra_calculation(
             model_label = 'Exponential' if profile.model_type == 'exponential' else 'Beta-Poisson'
 
             # ── AMR track (only if ARB_Concentration provided) ────────────────
-            daly_arb    = None
-            d_daly      = None
-            p_inf_arb   = None
-            dose_arb    = None
-            cfr_resistant = ep['cfr_resistant']
+            daly_arb       = None
+            d_daly         = None
+            d_daly_attr    = None
+            p_inf_arb      = None
+            dose_arb       = None
+            cfr_resistant  = ep['cfr_resistant']
             risk_label_arb = None
 
             arb_conc = rec.get('arb_concentration')
@@ -383,10 +384,18 @@ def run_qmra_calculation(
                     1.0,
                 )
                 p_inf_arb = _apply_dose_response(profile, dose_arb)
-                _, _, daly_arb, _ = _calc_daly_track(
+                _, p_ill_arb, daly_arb, _ = _calc_daly_track(
                     p_inf_arb, res_illness_ratio, ep, rec['events_per_year'], l_yll, resistant=True,
                 )
-                d_daly         = daly_arb - daly_baseline
+                d_daly = daly_arb - daly_baseline
+                # Attributable dDALY: extra DALY/person-yr from resistance, holding exposure fixed
+                dpc_r = (ep['cfr_resistant'] * l_yll
+                         + (1.0 - ep['cfr_resistant']) * ep['disability_weight']
+                         * ep['duration_resistant_days'] / 365.0)
+                dpc_s = (ep['cfr_baseline'] * l_yll
+                         + (1.0 - ep['cfr_baseline']) * ep['disability_weight']
+                         * ep['duration_baseline_days'] / 365.0)
+                d_daly_attr    = max(0.0, p_ill_arb * (dpc_r - dpc_s))
                 risk_label_arb = get_risk_label(daly_arb, thresholds)
 
             results.append({
@@ -420,6 +429,7 @@ def run_qmra_calculation(
                 'daly_baseline':    round(daly_baseline, 10),
                 'daly_arb':         round(daly_arb, 10) if daly_arb is not None else None,
                 'd_daly':           round(d_daly, 10) if d_daly is not None else None,
+                'd_daly_attr':      round(d_daly_attr, 10) if d_daly_attr is not None else None,
                 'risk_label':       get_risk_label(daly_baseline, thresholds),
                 'risk_label_arb':   risk_label_arb,
                 'param_source':     profile.param_source,
