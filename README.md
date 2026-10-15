@@ -29,7 +29,8 @@ Evaluates probability of infection, probability of illness, and Disability-Adjus
 | P(infection) | Annual probability of infection per pathogen |
 | P(illness) | Annual probability of illness |
 | DALYs/yr | Disability-adjusted life years per year |
-| dDALY | Additional DALY burden from AMR (if ARB concentration provided) |
+| dDALY (Naive) | Additional DALY burden from AMR (DALY_ARB − DALY_baseline); can be negative |
+| dDALY (Attributable) | Resistance penalty = P(ill\|ARB) × (dpc_resistant − dpc_susceptible); always ≥ 0 |
 
 WHO benchmark: `10⁻⁶ DALYs/person/year`.
 Reference: Haas et al. 1999; Harb & Hong 2017; Goh et al. 2023.
@@ -43,7 +44,7 @@ A 6-step relative AMR burden pipeline combining antibiotic-resistant bacteria (A
 |------|-------|-------------|
 | ARB only | ℜ_ARB | Burden from resistant bacteria |
 | ARG only | ℜ_ARG | Burden from resistance genes |
-| Combined | ℜ_AMR = α × ℜ_ARB + (1−α) × ℜ_ARG | Weighted dual-track score (default α = 0.6) |
+| Combined | ℜ_AMR = α × ℜ_ARB + (1−α) × ℜ_ARG | Weighted dual-track score (default α = 0.7) |
 
 Risk thresholds: `< 0.40` Low, `0.40–0.65` Medium, `≥ 0.65` High.
 Reference: Goh et al. 2022, *Journal of Hazardous Materials*.
@@ -330,9 +331,9 @@ Fixed columns across all templates: `Sample_ID`, `Site`, `Month`, `Date`, `Categ
 
 **QMRA template** — columns: `Pathogen`, `Concentration`, `Volume_L`, `Exposure_freq`, `ARB_Concentration` (optional). Units: `per 100 mL`.
 
-**CAMRI ARB template** — data columns are resistant bacteria types: `Ec_CAZ`, `Pseu_MEM`, `Kleb_CAZ`, `Kleb_MEM`, `Ent_VAN`, `Ec_MEM`. Units: `CFU/mL`.
+**CAMRI ARB template** — data columns are resistant pathogen × antibiotic combinations plus susceptible baselines: `Ec_CAZ`, `Pseu_MEM`, `Kleb_CAZ`, `Kleb_MEM`, `Ent_VAN`, `Ec_MEM`, `Ec`, `Ent`, `Kleb`, `Pseu`. Units: `CFU/mL`.
 
-**CAMRI ARG template** — data columns are resistance genes: `blaKPC`, `blaCTX_M`, `vanA`, `blaNDM`, `blaSHV`, `tetO`, `tetM`, `qnrA`. Units: `copies/mL`.
+**CAMRI ARG template** — data columns are Resistomap HT-qPCR primer set IDs (57 supported; SFA panel example: `AY456_qepA`, `AY461_qnrS2`, `AY466_MCR-1`, `AY134_blaCTX-M_5`, `AY152_blaNDM`, `AY104_blaSHV_1`, `AY601_blaOXA48`, `AY153_blaKPC_2`, `AY8_AAC6-Ib_1`, `AY32_floR_1`). Units: `copies/mL`.
 
 **RADAR Score** — uses the same raw Excel files as the individual modules above. No separate template. Upload the QMRA, CAMRI ARG, and/or RQ files directly. Test datasets are provided in `docs/dataset/`.
 
@@ -352,20 +353,17 @@ Fixed columns across all templates: `Sample_ID`, `Site`, `Month`, `Date`, `Categ
 | Quaternary Ammonium | BDDACI, BENZ-CL, DDACI |
 | Heavy Metals | AS, CR, CD, CU, PB, ZN |
 
-### QMRA Pathogens
+### QMRA Pathogens (Active)
 
-| Pathogen | Model |
-|----------|-------|
-| Cryptosporidium | Exponential |
-| Giardia | Beta-Poisson |
-| Rotavirus | Beta-Poisson |
-| E. coli (pathogenic) | Beta-Poisson |
-| Klebsiella pneumoniae | Beta-Poisson |
-| Enterococcus faecium | Beta-Poisson |
+| Pathogen | Model | Parameters |
+|----------|-------|-----------|
+| *Escherichia coli* | Beta-Poisson | α = 0.155, β = 2.42 × 10⁴, pathogenic fraction = 0.08 |
+| *Klebsiella pneumoniae* | Exponential | k = 1.62 × 10⁻⁶ |
+| *Enterococcus faecium* | Exponential | k = 2.19 × 10⁻¹¹ (E. faecalis surrogate) |
 
 ### CAMRI Coefficients
 
-ARB burden coefficients from Cassini et al. 2019 (DALY database). ARG risk ranks from Zhang et al. 2019 (ARG Ranker).
+ARB coefficients from Revised Table 2 (Cassini et al. 2019 + GBD 2021 attribution ratios) — DALYs per case; 6 resistant pathogen × antibiotic combinations + 4 susceptible baseline totals (10 columns total). ARG weights from Resistomap `primer_ARG_weightage` — mean ARG_ranker risk coefficient per primer set (continuous 1–5 scale); all 57 universal Resistomap primer sets supported.
 
 ---
 
