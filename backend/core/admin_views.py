@@ -44,9 +44,11 @@ API_ENDPOINTS = [
                 'response': (
                     'JSON with results[], errors[], warnings[], meta. '
                     'Each result includes: dose, p_infection, p_annual, p_illness, daly, daly_baseline, '
-                    'daly_arb, d_daly, cfr_baseline, cfr_resistant, risk_label, risk_label_arb, '
+                    'daly_arb, d_daly, d_daly_attr, cfr_baseline, cfr_resistant, risk_label, risk_label_arb, '
                     'daly_method, pathogenic_fraction, param_source, param_source_amr. '
-                    'daly_arb and d_daly are null when ARB_Concentration is not provided.'
+                    'daly_arb, d_daly, and d_daly_attr are null when ARB_Concentration is not provided. '
+                    'd_daly (Naive dDALY) = DALY_ARB − DALY_baseline; can be negative. '
+                    'd_daly_attr (Attributable dDALY) = P(ill|ARB) × (dpc_resistant − dpc_susceptible); always ≥ 0.'
                 ),
                 'notes': (
                     'Template: download from the QMRA page. Headers in row 4, data from row 5. '
@@ -81,12 +83,13 @@ API_ENDPOINTS = [
             {
                 'method': 'POST',
                 'url': '/api/v1/qmra/sensitivity/',
-                'description': 'Start a Monte Carlo sensitivity analysis for a set of QMRA records.',
+                'description': 'Start a Monte Carlo Spearman sensitivity analysis for a set of QMRA records.',
                 'auth': True,
                 'request': '{"records": [...], "n_sim": 10000}',
                 'response': 'JSON with task_id to poll for results.',
                 'notes': (
                     'Runs asynchronously. Default n_sim = 10000. '
+                    'Applies to E. coli rows with Swimming or Kayaking/Wading exposure only. '
                     'Poll the status endpoint with the returned task_id.'
                 ),
             },
@@ -96,8 +99,20 @@ API_ENDPOINTS = [
                 'description': 'Poll the result of a running sensitivity analysis.',
                 'auth': True,
                 'request': 'URL param: task_id (from sensitivity POST)',
-                'response': 'JSON with status (pending / complete) and results when complete.',
-                'notes': 'Poll every 2–3 seconds until status is "complete".',
+                'response': (
+                    'JSON with status (pending / complete / error). '
+                    'When complete, result contains: status, n_sim, n_ecoli_rows, has_arb, '
+                    'col_labels (["Swim: P(ill)", "Swim: DALY", "Kayak: P(ill)", "Kayak: DALY"]), '
+                    'dec{row_labels, rho, pvalues}, '
+                    'upec_sus{row_labels, rho, pvalues}, '
+                    'upec_esbl{row_labels, rho, pvalues}. '
+                    'Each panel rho is an N×4 matrix of Spearman ρ values.'
+                ),
+                'notes': (
+                    'Poll every 2–3 seconds until status is "complete". '
+                    'Three panels: DEC (diarrhoea, 7 inputs), UPEC-susceptible (UTI, 8 inputs), UPEC-ESBL (UTI, 8 inputs). '
+                    'If no eligible rows exist, result.status = "no_data".'
+                ),
             },
         ],
     },
@@ -173,6 +188,42 @@ API_ENDPOINTS = [
         ],
     },
     {
+        'module': 'RADAR — Risk Assessment and Decision Analysis for AMR',
+        'color': '#B45309',
+        'endpoints': [
+            {
+                'method': 'POST',
+                'url': '/api/v1/radar/calculate/',
+                'description': 'Upload 2–3 module files and compute a combined RADAR Score per sample and site.',
+                'auth': True,
+                'request': (
+                    'multipart/form-data — optional fields: '
+                    'qmra_file (.xlsx/.xls), camri_arg_file (.xlsx/.xls), rq_file (.xlsx/.xls). '
+                    'At least 2 files required. '
+                    'Optional weights: w_a (QMRA, default 0.50), w_b (CAMRI, default 0.30), w_c (RQ, default 0.20). '
+                    'Weights are clamped to [0.0, 1.0] independently; they need not sum to 1.'
+                ),
+                'response': (
+                    'JSON with status, module, version, meta, results[], site_summary[], risk_tiers[], errors[], warnings[]. '
+                    'meta includes: modules_uploaded, total_samples, total_sites, weights, processed_at. '
+                    'Each result includes: sample_id, site, month, date, category, sub_category, '
+                    'radar_score, radar_tier, modules{qmra, camri, rq} (each with normalised score and raw value). '
+                    'site_summary aggregates results by site: site, mean_radar_score, max_radar_score, radar_tier, sample_count. '
+                    'risk_tiers lists tier thresholds: Negligible < 0.25, Low 0.25–0.50, Moderate 0.50–0.75, High >= 0.75.'
+                ),
+                'notes': (
+                    'RADAR normalises each module score to [0, 1] before weighting. '
+                    'QMRA: normalised from DALY/yr using log10 scale (floor 1e-8, ceiling 1e-2). '
+                    'CAMRI: r_amr score used directly (already in [0, 1]). '
+                    'RQ: max RQ_AMR across compounds, log10-normalised (floor 0.01, ceiling 100). '
+                    'Samples matched across modules by (Site, Date) key. '
+                    'Samples with only 1 matching module are excluded from RADAR but appear in module errors. '
+                    'File formats must match each module\'s own template requirements.'
+                ),
+            },
+        ],
+    },
+    {
         'module': 'Compound Reference',
         'color': '#0369A1',
         'endpoints': [
@@ -209,7 +260,7 @@ API_ENDPOINTS = [
                 'response': 'Array of module config objects including risk_thresholds JSON.',
                 'notes': (
                     'Used by the frontend NavBar to list active modules. '
-                    'Active modules: RQ, QMRA, CAMRI.'
+                    'Active modules: RQ, QMRA, CAMRI, RADAR.'
                 ),
             },
             {
