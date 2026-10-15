@@ -139,11 +139,14 @@ function doDownloadXLSX(results, meta, thresholds = DEFAULT_RISK_LEVELS) {
         : `r_AMR ≥ ${Number(t.min).toFixed(2)}`,
       t.label,
     ]),
-    [""], ["ARB Coefficients (Cassini et al. 2019 DALY)"],
-    ["Ec_CAZ",37.2],["Pseu_MEM",27.2],["Kleb_CAZ",22.5],
-    ["Kleb_MEM",11.5],["Ent_VAN",5.49],["Ec_MEM",0.80],
-    [""], ["ARG Coefficients (Zhang et al. 2019 ARG Ranker)"],
-    ["blaKPC/blaCTX_M",5],["vanA",4],["blaNDM/blaSHV/tetO",3],["tetM",2],["qnrA",1],
+    [""], ["ARB Coefficients (Revised Table 2 — Cassini 2019 + GBD 2021, DALYs/case)"],
+    ["Ec_CAZ",0.64],["Pseu_MEM",2.26],["Kleb_CAZ",1.68],
+    ["Kleb_MEM",3.70],["Ent_VAN",1.75],["Ec_MEM",1.57],
+    ["Ec",0.57],["Ent",1.27],["Kleb",1.54],["Pseu",1.83],
+    [""], ["ARG Coefficients (Resistomap primer_ARG_weightage — mean ARG_ranker weight, 1–5 scale)"],
+    ["AY456_qepA",2.0],["AY461_qnrS2",4.0],["AY466_MCR-1",2.053],["AY134_blaCTX-M_5",1.748],
+    ["AY152_blaNDM",4.303],["AY104_blaSHV_1",1.622],["AY601_blaOXA48",1.698],["AY153_blaKPC_2",1.561],
+    ["AY8_AAC6-Ib_1",2.652],["AY32_floR_1",2.667],
   ]);
   wsMeta["!cols"] = [{ wch: 30 }, { wch: 22 }];
   XLSX.utils.book_append_sheet(wb, wsMeta, "Metadata");
@@ -304,8 +307,8 @@ const Instructions = () => {
             <AlertTriangle size={14} color={C.yellow} style={{ flexShrink: 0, marginTop: 1 }}/>
             <p style={{ color: "#92400E", fontSize: 14 }}>
               <strong>Reference:</strong> Goh et al. (2022) <em>Journal of Hazardous Materials</em>.
-              ARB coefficients from Cassini et al. (2019) DALY database.
-              ARG coefficients from Zhang et al. (2019) ARG Ranker.
+              ARB coefficients from Revised Table 2 (Cassini 2019 + GBD 2021 attribution ratios), DALYs/case.
+              ARG coefficients from Resistomap primer_ARG_weightage (mean ARG_ranker weight, 1–5 scale).
               Results are relative indices (0–1), not absolute risk estimates.
             </p>
           </div>
@@ -372,7 +375,7 @@ const CoefficientsPanel = ({ arb = [], arg = [] }) => {
               ARG — Antibiotic Resistance Genes (copies/mL)
             </p>
             <p style={{ color: C.textMid, fontSize: 13, marginBottom: 10 }}>
-              Priority rank-based coefficients from Zhang et al. (2019) ARG Ranker. Higher rank = greater clinical concern.
+              Mean ARG_ranker risk weight per Resistomap primer set (primer_ARG_weightage). Higher weight = greater clinical concern.
             </p>
             <div className="overflow-x-auto">
               <table style={{ borderCollapse: "collapse", fontSize: 13, width: "100%" }}>
@@ -693,7 +696,7 @@ export default function CAMRIPage() {
 
   const [arbFile,    setArbFile]    = useState(null);
   const [argFile,    setArgFile]    = useState(null);
-  const [alpha,      setAlpha]      = useState(0.6);
+  const [alpha,      setAlpha]      = useState(0.7);
   const [validation, setValidation] = useState(null);
   const [validating, setValidating] = useState(false);
   const [validError, setValidError] = useState(null);
@@ -1437,7 +1440,7 @@ export default function CAMRIPage() {
                 {activeTab === "arbheatmap" && (
                   <div>
                     <p style={{ color: C.textMid, fontSize: 13, marginBottom: 12 }}>
-                      Weighted ARB burden per sample and analyte — S_ARB = N_ARB × DALY coefficient (Cassini 2019).
+                      Weighted ARB burden per sample and analyte — S_ARB = N_ARB × DALY coefficient (Revised Table 2, Cassini 2019 + GBD 2021).
                       Darker cells indicate higher weighted burden for that analyte.
                     </p>
                     {!arbMatrix || !arbMatrix.length

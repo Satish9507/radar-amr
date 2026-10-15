@@ -4,7 +4,7 @@
 
 CAMRI (Combined AMR Relative Index) is a 6-step relative burden pipeline that integrates antibiotic-resistant bacteria (ARB) concentrations and antibiotic resistance genes (ARG) abundance into a single normalised score (ℜ_AMR) per sample. The score represents the relative AMR burden at a site compared to all other sites in the same dataset.
 
-The method is based on Goh et al. (2022), *Journal of Hazardous Materials* 424:127621, with ARB burden coefficients from Cassini et al. (2019) and ARG priority ranks from Zhang et al. (2019).
+The method is based on Goh et al. (2022), *Journal of Hazardous Materials* 424:127621, with ARB burden coefficients from Revised Table 2 (Cassini et al. 2019, with susceptible baselines derived using GBD 2021 attribution ratios) and ARG weights from Resistomap primer_ARG_weightage (mean ARG_ranker risk coefficient per primer set).
 
 ---
 
@@ -32,29 +32,35 @@ Each sample provides measured concentrations for:
 
 | Column | Organism × Antibiotic | DALY Coefficient |
 |--------|----------------------|-----------------|
-| `Ec_CAZ` | *E. coli* × ceftazidime | 37.2 |
-| `Pseu_MEM` | *P. aeruginosa* × meropenem | 27.2 |
-| `Kleb_CAZ` | *K. pneumoniae* × ceftazidime | 22.5 |
-| `Kleb_MEM` | *K. pneumoniae* × meropenem | 11.5 |
-| `Ent_VAN` | *Enterococcus* × vancomycin | 5.49 |
-| `Ec_MEM` | *E. coli* × meropenem | 0.80 |
+| `Ec_CAZ` | *E. coli* × ceftazidime (3GCRE) | 0.64 |
+| `Pseu_MEM` | *P. aeruginosa* × meropenem (CRPseu) | 2.26 |
+| `Kleb_CAZ` | *K. pneumoniae* × ceftazidime (3GCRKP) | 1.68 |
+| `Kleb_MEM` | *K. pneumoniae* × meropenem (CRKP) | 3.70 |
+| `Ent_VAN` | *Enterococcus* × vancomycin (VRE) | 1.75 |
+| `Ec_MEM` | *E. coli* × meropenem (CREco) | 1.57 |
+| `Ec` | *E. coli* susceptible baseline | 0.57 |
+| `Ent` | *Enterococcus* susceptible baseline | 1.27 |
+| `Kleb` | *K. pneumoniae* susceptible baseline | 1.54 |
+| `Pseu` | *P. aeruginosa* susceptible baseline | 1.83 |
 
-ARB coefficients represent the disease burden weight of each pathogen–antibiotic combination, derived from DALY estimates in Cassini et al. (2019).
+ARB coefficients represent DALYs per case derived from EU/EEA incidence data (Cassini et al. 2019), with susceptible baseline values back-calculated using GBD 2021 attributable/associated fractions. All values are in DALYs/case; higher values indicate greater per-case disease burden.
 
-**ARG (Antibiotic Resistance Genes)** — in copies/mL:
+**ARG (Antibiotic Resistance Genes)** — in copies/mL (Resistomap HT-qPCR primer sets, SFA panel):
 
-| Column | Gene | Priority Rank | Coefficient |
-|--------|------|--------------|------------|
-| `blaKPC` | β-lactamase KPC | 1 | 5 |
-| `blaCTX_M` | β-lactamase CTX-M | 1 | 5 |
-| `vanA` | Vancomycin resistance | 2 | 4 |
-| `blaNDM` | β-lactamase NDM | 3 | 3 |
-| `blaSHV` | β-lactamase SHV | 3 | 3 |
-| `tetO` | Tetracycline O | 3 | 3 |
-| `tetM` | Tetracycline M | 4 | 2 |
-| `qnrA` | Quinolone A | 5 | 1 |
+| Column | Primer Set | ARG_ranker Weight |
+|--------|-----------|------------------|
+| `AY456_qepA` | qepA | 2.000 |
+| `AY461_qnrS2` | qnrS2 | 4.000 |
+| `AY466_MCR-1` | MCR-1 | 2.053 |
+| `AY134_blaCTX-M_5` | blaCTX-M | 1.748 |
+| `AY152_blaNDM` | blaNDM | 4.303 |
+| `AY104_blaSHV_1` | blaSHV | 1.622 |
+| `AY601_blaOXA48` | blaOXA-48 | 1.698 |
+| `AY153_blaKPC_2` | blaKPC | 1.561 |
+| `AY8_AAC6-Ib_1` | aac(6')-Ib | 2.652 |
+| `AY32_floR_1` | floR | 2.667 |
 
-ARG coefficients are priority ranks from the ARG Ranker database (Zhang et al. 2019), reflecting clinical importance and mobility of each gene.
+The full coefficient table supports all 57 Resistomap Universal primer sets. Any column uploaded that matches a primer set ID is automatically weighted; unrecognised columns are silently excluded. ARG weights are continuous values on the ARG_ranker scale (1–5), computed as the mean ARG_ranker risk coefficient across all subtypes that each primer set amplifies.
 
 ---
 
@@ -85,7 +91,7 @@ Each normalised value is multiplied by the analyte's burden coefficient:
 S_ij = N_ij × w_j
 ```
 
-Where **w_j** is the DALY coefficient (ARB) or priority rank (ARG) for analyte j.
+Where **w_j** is the DALY coefficient (ARB, DALYs/case) or ARG_ranker weight (ARG, 1–5 scale) for analyte j.
 
 ---
 
@@ -121,11 +127,11 @@ When both ARB and ARG files are provided, the final combined score is a weighted
 ℜ_AMR = α × ℜ_ARB + (1 − α) × ℜ_ARG
 ```
 
-Where **α** is the ARB weighting factor (default = 0.6, range 0.5–1.0).
+Where **α** is the ARB weighting factor (default = 0.7, range 0.5–1.0).
 
-ARBs always carry more weight (α ≥ 0.5) because measurable resistant organisms represent a more direct and immediate health risk than resistance genes, which may reside in non-pathogenic or non-culturable organisms (Manaia 2017).
+ARBs always carry more weight (α ≥ 0.5) because measurable resistant organisms represent a more direct and immediate health risk than resistance genes, which may reside in non-pathogenic or non-culturable organisms (Manaia 2017). The default α = 0.7 follows the Goh et al. (2022) example value used in the CAMRI R script.
 
-A sensitivity analysis is automatically run for α ∈ {0.6, 0.7, 0.8, 0.9} to show how the combined score changes under different weighting assumptions.
+A sensitivity analysis is automatically run for α ∈ {0.5, 0.6, 0.7, 0.8, 0.9} to show how the combined score changes under different weighting assumptions.
 
 ---
 
@@ -178,8 +184,8 @@ Unrecognised columns do not fail the upload — they are simply excluded. This a
 ## Limitations
 
 - The min-max normalisation means scores are dataset-relative; a pristine environment added to a polluted dataset will score near 0 even if its absolute concentrations are non-trivial
-- ARB coefficients are based on EU DALY estimates (Cassini et al. 2019); they may not reflect the true burden distribution in other regions where different pathogen–antibiotic combinations dominate
-- ARG priority ranks (Zhang et al. 2019) are based on gene mobility and clinical relevance, not direct DALY estimates; the two coefficient systems are therefore not directly comparable in magnitude
+- ARB coefficients are based on EU/EEA DALY estimates (Cassini et al. 2019); they may not reflect the true burden distribution in other regions where different pathogen–antibiotic combinations dominate
+- ARG weights (Resistomap primer_ARG_weightage) are continuous values derived from the ARG_ranker database (mean score across amplified subtypes); primer sets with no ranked subtypes have no weight and are excluded from the ARG burden term
 - The model does not account for horizontal gene transfer rates, gene–host associations, or environmental persistence
 
 ---
@@ -188,5 +194,6 @@ Unrecognised columns do not fail the upload — they are simply excluded. This a
 
 - Goh, S.G., et al. (2022). A relative AMR burden index for environmental monitoring of antibiotic resistance in surface water. *Journal of Hazardous Materials*, 424, 127621.
 - Cassini, A., et al. (2019). Attributable deaths and DALYs caused by infections with antibiotic-resistant bacteria in the EU and EEA. *The Lancet Infectious Diseases*, 19(1), 56–66.
-- Zhang, A.N., et al. (2019). An omics-based framework for assessing the health risk of antimicrobial resistance genes. *Nature Communications*, 10, 4765.
+- GBD 2021 Antimicrobial Resistance Collaborators (2024). Global burden of bacterial antimicrobial resistance 1990–2021: a systematic analysis with forecasts to 2050. *The Lancet*, 404(10459), 1199–1226. *(GBD 2021 attributable/associated fractions used to derive susceptible baseline DALYs/case)*
+- ARG_ranker — risk-ranking framework for ARGs by gene mobility and clinical relevance. Accessed via CARD_SARG_cleaned.tsv (ARO IDs joined to CARD). Weightage per primer set computed as mean ARG_ranker coefficient across mapped and ranked subtypes.
 - Manaia, C.M. (2017). Assessing the risk of antibiotic resistance transmission from the environment to humans: non-direct proportionality between abundance and risk. *Trends in Microbiology*, 25(3), 173–181.

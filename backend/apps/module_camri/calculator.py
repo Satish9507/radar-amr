@@ -181,7 +181,7 @@ def _run_arg_track(records: list, arg_coefficients: dict) -> tuple:
 def run_camri(
     arb_records: list | None = None,
     arg_records: list | None = None,
-    alpha: float = 0.6,
+    alpha: float = 0.7,
     thresholds=None,
 ) -> dict:
     """

@@ -144,7 +144,7 @@ API_ENDPOINTS = [
                 'auth': True,
                 'request': (
                     'multipart/form-data — fields: arb_file (.xlsx/.xls), arg_file (.xlsx/.xls), '
-                    'alpha (float, default 0.6, range 0.5–1.0).'
+                    'alpha (float, default 0.7, range 0.5–1.0).'
                 ),
                 'response': (
                     'JSON with status, mode, results[], arb_matrix, arg_matrix, arb_keys, arg_keys, '
@@ -154,7 +154,8 @@ API_ENDPOINTS = [
                     'Modes: arb_only (only arb_file), arg_only (only arg_file), combined (both files). '
                     'Each result includes: sample_id, site, month, date, category, sub_category, '
                     'r_arb, r_arg, r_amr, risk_level. '
-                    'ARB coefficients from Cassini et al. 2019. ARG ranks from Zhang et al. 2019. '
+                    'ARB coefficients from Revised Table 2 (Cassini 2019 + GBD 2021), DALYs/case. '
+                    'ARG weights from Resistomap primer_ARG_weightage (mean ARG_ranker coefficient, 1–5 scale). '
                     'Reference: Goh et al. 2022, J. Hazardous Materials. '
                     'Risk thresholds: < 0.40 Low, 0.40–0.65 Medium, >= 0.65 High.'
                 ),
@@ -168,7 +169,9 @@ API_ENDPOINTS = [
                 'response': 'Excel file (.xlsx) with ARB coefficient columns pre-populated.',
                 'notes': (
                     'Columns: Sample_ID, Site, Month, Date, Category, Sub_category, '
-                    'Ec_CAZ, Pseu_MEM, Kleb_CAZ, Kleb_MEM, Ent_VAN, Ec_MEM. '
+                    'Ec_CAZ, Pseu_MEM, Kleb_CAZ, Kleb_MEM, Ent_VAN, Ec_MEM, Ec, Ent, Kleb, Pseu. '
+                    'Ec_CAZ–Ec_MEM = resistant pathogen × antibiotic combinations (DALYs/case). '
+                    'Ec, Ent, Kleb, Pseu = susceptible baseline totals (DALYs/case). '
                     'Units row (row 1): CFU/mL for all data columns.'
                 ),
             },
@@ -181,7 +184,10 @@ API_ENDPOINTS = [
                 'response': 'Excel file (.xlsx) with ARG gene columns pre-populated.',
                 'notes': (
                     'Columns: Sample_ID, Site, Month, Date, Category, Sub_category, '
-                    'blaKPC, blaCTX_M, vanA, blaNDM, blaSHV, tetO, tetM, qnrA. '
+                    'AY456_qepA, AY461_qnrS2, AY466_MCR-1, AY134_blaCTX-M_5, AY152_blaNDM, '
+                    'AY104_blaSHV_1, AY601_blaOXA48, AY153_blaKPC_2, AY8_AAC6-Ib_1, AY32_floR_1. '
+                    'Column IDs are Resistomap HT-qPCR primer set identifiers (SFA panel, 10 assays). '
+                    'Any subset of the 57 universal Resistomap primer set IDs is accepted. '
                     'Units row (row 1): copies/mL for all data columns.'
                 ),
             },
