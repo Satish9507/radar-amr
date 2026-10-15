@@ -83,6 +83,14 @@ class Command(BaseCommand):
     help = 'Seed the CAMRICoefficient table with ARB and ARG burden weights'
 
     def handle(self, *args, **options):
+        # Remove any stale entries not present in the canonical lists above
+        known_cols = {r['column_name'] for r in ARB_ROWS + ARG_ROWS}
+        stale = CAMRICoefficient.objects.exclude(column_name__in=known_cols)
+        stale_count = stale.count()
+        if stale_count:
+            stale.delete()
+            self.stdout.write(self.style.WARNING(f'Removed {stale_count} stale coefficient(s)'))
+
         created = updated = 0
         for coeff_type, rows in [('arb', ARB_ROWS), ('arg', ARG_ROWS)]:
             for row in rows:
