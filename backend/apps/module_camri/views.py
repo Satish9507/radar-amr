@@ -279,15 +279,18 @@ class CAMRITemplateView(APIView):
                 {'Sample_ID': 'SG-001', 'Site': 'Kallang River', 'Month': 'Dec',
                  'Date': '2015-12-15', 'Category': 'Tributary', 'Sub_category': 'Urban',
                  'Ec_CAZ': 89.5, 'Pseu_MEM': 548.5, 'Kleb_CAZ': 39.7,
-                 'Kleb_MEM': 27.1, 'Ent_VAN': 29.6, 'Ec_MEM': 110.6},
+                 'Kleb_MEM': 27.1, 'Ent_VAN': 29.6, 'Ec_MEM': 110.6,
+                 'Ec': 1240.0, 'Ent': 860.0, 'Kleb': 312.0, 'Pseu': 654.0},
                 {'Sample_ID': 'SG-002', 'Site': 'Bedok Reservoir', 'Month': 'Dec',
                  'Date': '2015-12-15', 'Category': 'Freshwater Lake', 'Sub_category': 'Urban',
                  'Ec_CAZ': 0.58, 'Pseu_MEM': 24.2, 'Kleb_CAZ': 0.36,
-                 'Kleb_MEM': 5.13, 'Ent_VAN': 0.04, 'Ec_MEM': 13.8},
+                 'Kleb_MEM': 5.13, 'Ent_VAN': 0.04, 'Ec_MEM': 13.8,
+                 'Ec': 48.0, 'Ent': 22.0, 'Kleb': 9.5, 'Pseu': 31.0},
                 {'Sample_ID': 'SG-003', 'Site': 'MacRitchie Res', 'Month': 'Dec',
                  'Date': '2015-12-15', 'Category': 'Freshwater Lake', 'Sub_category': 'Parkland',
                  'Ec_CAZ': 0.0, 'Pseu_MEM': 0.18, 'Kleb_CAZ': 0.09,
-                 'Kleb_MEM': 0.0, 'Ent_VAN': 0.0, 'Ec_MEM': 0.0},
+                 'Kleb_MEM': 0.0, 'Ent_VAN': 0.0, 'Ec_MEM': 0.0,
+                 'Ec': 3.2, 'Ent': 1.1, 'Kleb': 0.5, 'Pseu': 0.9},
             ]
         elif file_type == 'arg':
             data_cols   = list(arg_coeffs.keys())
@@ -296,16 +299,19 @@ class CAMRITemplateView(APIView):
             example_rows = [
                 {'Sample_ID': 'SG-001', 'Site': 'Kallang River', 'Month': 'Dec',
                  'Date': '2015-12-15', 'Category': 'Tributary', 'Sub_category': 'Urban',
-                 'blaKPC': 60.0, 'blaCTX_M': 0.77, 'vanA': 10.3, 'blaNDM': 10.6,
-                 'blaSHV': 40.3, 'tetO': 1829.1, 'tetM': 50.4, 'qnrA': 71.2},
+                 'AY456_qepA': 120.5, 'AY461_qnrS2': 43.2, 'AY466_MCR-1': 8.7,
+                 'AY134_blaCTX-M_5': 310.0, 'AY152_blaNDM': 55.4, 'AY104_blaSHV_1': 198.3,
+                 'AY601_blaOXA48': 14.1, 'AY153_blaKPC_2': 60.0, 'AY8_AAC6-Ib_1': 87.9, 'AY32_floR_1': 224.6},
                 {'Sample_ID': 'SG-002', 'Site': 'Bedok Reservoir', 'Month': 'Dec',
                  'Date': '2015-12-15', 'Category': 'Freshwater Lake', 'Sub_category': 'Urban',
-                 'blaKPC': 54.6, 'blaCTX_M': 0.04, 'vanA': 2.53, 'blaNDM': 8.8,
-                 'blaSHV': 6.06, 'tetO': 6.29, 'tetM': 0.0, 'qnrA': 110.2},
+                 'AY456_qepA': 5.1, 'AY461_qnrS2': 1.8, 'AY466_MCR-1': 0.0,
+                 'AY134_blaCTX-M_5': 22.4, 'AY152_blaNDM': 4.6, 'AY104_blaSHV_1': 11.0,
+                 'AY601_blaOXA48': 0.3, 'AY153_blaKPC_2': 6.5, 'AY8_AAC6-Ib_1': 3.2, 'AY32_floR_1': 9.8},
                 {'Sample_ID': 'SG-003', 'Site': 'MacRitchie Res', 'Month': 'Dec',
                  'Date': '2015-12-15', 'Category': 'Freshwater Lake', 'Sub_category': 'Parkland',
-                 'blaKPC': 12.0, 'blaCTX_M': 0.0, 'vanA': 0.5, 'blaNDM': 2.1,
-                 'blaSHV': 1.2, 'tetO': 1.0, 'tetM': 0.0, 'qnrA': 8.3},
+                 'AY456_qepA': 0.0, 'AY461_qnrS2': 0.2, 'AY466_MCR-1': 0.0,
+                 'AY134_blaCTX-M_5': 1.5, 'AY152_blaNDM': 0.0, 'AY104_blaSHV_1': 0.8,
+                 'AY601_blaOXA48': 0.0, 'AY153_blaKPC_2': 0.4, 'AY8_AAC6-Ib_1': 0.1, 'AY32_floR_1': 0.6},
             ]
         else:
             return Response(
